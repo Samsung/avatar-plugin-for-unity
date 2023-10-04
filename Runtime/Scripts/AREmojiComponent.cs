@@ -314,14 +314,6 @@ namespace AvatarPluginForUnity
             _loadNode.SetActive(false);
         }
         /// <summary>
-        /// Destroys the immediate node.
-        /// </summary>
-        /// <param name="node">The node.</param>
-        public static void DestroyImmediateNode(GameObject node)
-        {
-            DestroyImmediate(node);
-        }
-        /// <summary>
         /// Set the ar emoji shadow.
         /// </summary>
         /// <param name="castingMode">The casting mode.</param>

@@ -147,7 +147,7 @@ namespace AvatarPluginForUnity
                     chilren.Add(mayDestroyedNode.GetChild(idx));
                 foreach (var child in chilren)
                     child.parent = mayDestroyedNode.parent;
-                AREmojiComponent.Destroy(mayDestroyedNode.gameObject);
+                UnityEngine.Object.Destroy(mayDestroyedNode.gameObject);
             }
         }
         /// <summary>
