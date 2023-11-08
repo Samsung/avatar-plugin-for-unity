@@ -27,7 +27,7 @@ The Avatar Plug-in for Unity is validated in Unity version 2.22.2.Xf1 and may wo
 <br>
 
 
-There is a dependency on [glTFast](https://github.com/atteneder/glTFast), so you need to import glTFast into your project first. Avatar Plug-in always follows the [latest glTFast](https://package-installer.glitch.me/v1/installer/OpenUPM/com.atteneder.gltfast?registry=https%3A%2F%2Fpackage.openupm.com&scope=com.atteneder).
+There is a dependency on [glTFast](https://github.com/atteneder/glTFast), so you need to import glTFast into your project first. Avatar Plug-in always follows the [latest glTFast]([https://package-installer.glitch.me/v1/installer/OpenUPM/com.atteneder.gltfast?registry=https%3A%2F%2Fpackage.openupm.com&scope=com.atteneder](https://package-installer.glitch.me/v1/installer/OpenUPM/com.atteneder.gltfast@5.0.4?registry=https%3A%2F%2Fpackage.openupm.com&scope=com.atteneder)).
 <center>
 
 <img src="https://d3unf4s5rp9dfh.cloudfront.net/AREmoji_doc/Import%20glTFast1.png"  width="800" alt="Figure 2: Import glTFast Pakage"/>
