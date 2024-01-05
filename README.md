@@ -10,7 +10,6 @@ This is a lightweight and fast implementation compared to other glTF libraries, 
 
 <br>
 <center>
-
 #### Version Naming Convention
 Type | Version |
 --- | --- |
@@ -18,7 +17,6 @@ Official | 4.X |
 Unofficial(LATEST) | 4.0.X |
 </center>
 <br>
-
 ## Why need to use Avatar Plug-in
 Avatar provided by Samsung complies with the gltf 2.0 standard specification. However, in order to fully function as an Avatar, additional functions and processes are required.
 For detailed explanation, please refer to [Samsung Developers](https://developer.samsung.com/galaxy-ar-emoji/partner/overview.html).
