@@ -21,26 +21,7 @@ Unofficial(LATEST) | 4.0.X |
 
 ## Why need to use Avatar Plug-in
 Avatar provided by Samsung complies with the gltf 2.0 standard specification. However, in order to fully function as an Avatar, additional functions and processes are required.
-The functions provided by Avatar Plug-in for Unity are as follows. For detailed explanation, please refer to [Samsung Developers](https://developer.samsung.com/galaxy-ar-emoji/partner/overview.html).
-
-### 1. Apply Humanoid Animation
-&nbsp;&nbsp;- Samsung's Avatar is designed to fit the human skeletal structure and is easy to apply humanoid animation.
-<br><br>
-### 2. Apply Face Animation
-&nbsp;&nbsp;- Samsung's Avatar can display various facial expressions through numerous Blendshapes and can be used as animation.
-<br><br>
-### 3. Creating Face Animation
-&nbsp;&nbsp;- You can directly record face animations to be used in Avatar and create them as animation files.
-<br><br>
-### 4. Avatar Mesh Joints Normalize
-&nbsp;&nbsp;- 
-We have solved the problem of broken mesh that occurs when joints are not normalized.
-<br><br>
-### 5. Mesh & Material Combine
-&nbsp;&nbsp;- 
-In multi-Avatar scenarios, performance has a huge impact on the experience. We not only combine Avatar's Mesh through various options, but also provide Material Combine through Texture Atlasing. This allows developers to dynamically control rendering & performance & memory on a case-by-case basis.
-
-
+For detailed explanation, please refer to [Samsung Developers](https://developer.samsung.com/galaxy-ar-emoji/partner/overview.html).
 
 ## How To Use
 ### 1. Project Settings
