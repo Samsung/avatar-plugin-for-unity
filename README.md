@@ -1,5 +1,5 @@
 # Avatar Plug-in for Unity : glTFast Plug-in
-![](https://img.shields.io/badge/unity3D-2022.2.Xf1-red)
+![](https://img.shields.io/badge/unity3D-2023.2.Xf1-red)
 ![](https://img.shields.io/badge/glTFast-latest-blue.svg)
 ![](https://img.shields.io/github/license/saltstack/salt)
 ![](https://img.shields.io/badge/AREmojiEditor-v6.1.00.X-blue)
