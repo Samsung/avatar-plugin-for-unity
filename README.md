@@ -10,6 +10,7 @@ This is a lightweight and fast implementation compared to other glTF libraries, 
 
 <br>
 <center>
+
 #### Version Naming Convention
 Type | Version |
 --- | --- |
