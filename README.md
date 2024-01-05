@@ -1,8 +1,14 @@
 # Avatar Plug-in for Unity : glTFast Plug-in
-![](https://img.shields.io/badge/unity3D-2023.2.Xf1-red)
+![](https://img.shields.io/badge/unity3D-2022.2.Xf1-red)
 ![](https://img.shields.io/badge/glTFast-latest-blue.svg)
 ![](https://img.shields.io/github/license/saltstack/salt)
 ![](https://img.shields.io/badge/AREmojiEditor-v6.1.00.X-blue)
+
+<div align="center" style="margin-top:15px;">
+ <img width="800" src="https://d3unf4s5rp9dfh.cloudfront.net/AREmoji_doc/overview4.PNG">
+</div>
+<br>
+
 ## Introduce
 [glTFast](https://github.com/atteneder/glTFast) is an open-source library for loading and rendering glTF™ (GL Transmission Format) 3D models in Unity.
 This is a lightweight and fast implementation compared to other glTF libraries, providing high performance even on mobile devices or low-end computers. This can be integrated with Unity's rendering engine. So we serve the [Avatar Plug-in for Unity](https://github.com/Samsung/avatar-plugin-for-unity), which loads AREmoji via glTFast and provides a variety of additional features. For detailed explanation, please refer to [Samsung Developers](https://developer.samsung.com/galaxy-ar-emoji/partner/overview.html).
