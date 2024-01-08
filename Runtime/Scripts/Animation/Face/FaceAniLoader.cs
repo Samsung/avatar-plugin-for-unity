@@ -22,7 +22,7 @@ using UnityEngine;
 
 namespace AvatarPluginForUnity
 {
-    public class FaceAniLoader
+    /*public class FaceAniLoader
     {
 
         private GameObject loadNode;
@@ -83,5 +83,5 @@ namespace AvatarPluginForUnity
             mAnimationClip.wrapMode = WrapMode.Loop;
             return mAnimationClip;
         }
-    }
+    }*/
 }

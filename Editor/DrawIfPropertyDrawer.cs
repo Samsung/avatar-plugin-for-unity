@@ -15,34 +15,49 @@
  * limitations under the License.
  *
  ******************************************************************/
-using UnityEditor;
-using UnityEngine;
 #if (UNITY_EDITOR || UNITY_STANDALONE_WIN)
+using UnityEngine;
+using UnityEditor;
+
 namespace AvatarPluginForUnity.Editor
 {
-[CustomPropertyDrawer(typeof(DrawIfAttribute))]
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <seealso cref="UnityEditor.PropertyDrawer" />
+    [CustomPropertyDrawer(typeof(DrawIfAttribute))]
     public class DrawIfPropertyDrawer : PropertyDrawer
     {
         #region Fields
+        /// <summary>
+        /// The draw if
+        /// </summary>
         DrawIfAttribute drawIf;
+        /// <summary>
+        /// The compared field
+        /// </summary>
         SerializedProperty comparedField;
-    
         #endregion
-    
+
+        /// <summary>
+        /// Override this method to specify how tall the GUI for this field is in pixels.
+        /// </summary>
+        /// <param name="property">The SerializedProperty to make the custom GUI for.</param>
+        /// <param name="label">The label of this property.</param>
+        /// <returns>
+        /// The height in pixels.
+        /// </returns>
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            if (!ShowMe(property) && drawIf.disablingType == DrawIfAttribute.DisablingType.Draw){
-                return 0f;
-            }
-
-            if (ShowMe(property) && drawIf.disablingType == DrawIfAttribute.DisablingType.DrawExclude){
-                return 0f;
-            }
-
-            return base.GetPropertyHeight(property, label);
+            return 0f;
         }
-    
-        private bool ShowMe(SerializedProperty property)
+
+        /// <summary>
+        /// Shows me.
+        /// </summary>
+        /// <param name="property">The property.</param>
+        /// <returns></returns>
+        private bool IsTrue(SerializedProperty property)
         {
             drawIf = attribute as DrawIfAttribute;
 
@@ -52,34 +67,44 @@ namespace AvatarPluginForUnity.Editor
             if (comparedField == null)
             {
                 Debug.LogError("Cannot find property with name: " + path);
-                return true;
+                return false;
             }
 
-            switch (comparedField.type)
+            if (path.Contains("Flags"))
             {
-                case "bool":
-                    return comparedField.boolValue.Equals(drawIf.comparedValue);
-                case "Enum":
-                    return comparedField.enumValueIndex.Equals((int)drawIf.comparedValue);
-                default:
-                    Debug.LogError("Error: " + comparedField.type + " is not supported of " + path);
+                if ((comparedField.enumValueFlag & (int)drawIf.comparedValue) != 0)
                     return true;
+                else
+                    return false;
             }
+            else
+                switch (comparedField.type)
+                {
+                    case "bool":
+                        return comparedField.boolValue.Equals(drawIf.comparedValue);
+                    case "Enum":
+                        return comparedField.enumValueIndex.Equals((int)drawIf.comparedValue);
+                    default:
+                        Debug.LogError("Error: " + comparedField.type + " is not supported of " + path);
+                        return false;
+                }
         }
-    
+
+        /// <summary>
+        /// Override this method to make your own IMGUI based GUI for the property.
+        /// </summary>
+        /// <param name="position">Rectangle on the screen to use for the property GUI.</param>
+        /// <param name="property">The SerializedProperty to make the custom GUI for.</param>
+        /// <param name="label">The label of this property.</param>
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            if (ShowMe(property) && drawIf.disablingType != DrawIfAttribute.DisablingType.DrawExclude){
-                EditorGUI.PropertyField(position, property, label);
-            } 
-            else if(!ShowMe(property) && drawIf.disablingType == DrawIfAttribute.DisablingType.DrawExclude){
-                EditorGUI.PropertyField(position, property, label);
-            }
-            else if (drawIf.disablingType == DrawIfAttribute.DisablingType.ReadOnly)
+            if (IsTrue(property) && (drawIf.disablingType != DrawIfAttribute.DisablingType.DrawExclude))
             {
-                GUI.enabled = false;
-                EditorGUI.PropertyField(position, property, label);
-                GUI.enabled = true;
+                EditorGUILayout.PropertyField(property, label);
+            }
+            else if (!IsTrue(property) && drawIf.disablingType == DrawIfAttribute.DisablingType.DrawExclude)
+            {
+                EditorGUILayout.PropertyField(property, label);            
             }
         }
     }

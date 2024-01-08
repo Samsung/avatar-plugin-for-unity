@@ -23,6 +23,7 @@ namespace AvatarPluginForUnity
     /// <summary>
     /// 
     /// </summary>
+    /// <seealso cref="UnityEngine.MonoBehaviour" />
     [DisallowMultipleComponent]
     public class FaceTrackingCore : MonoBehaviour
     {
@@ -58,22 +59,19 @@ namespace AvatarPluginForUnity
         /// </value>
         public bool useTracking => _useTracking;
 
-#if !(UNITY_EDITOR || UNITY_STANDALONE_WIN)
-    /// <summary>
-    /// The face tracking native
-    /// </summary>
-    private static AndroidJavaObject faceTrackingNative = (new AndroidJavaClass("com.samsung.avatarnative.facetracking.FaceTrackingClient")).CallStatic<AndroidJavaObject>("instance");
-#elif (UNITY_EDITOR || UNITY_STANDALONE_WIN)
-        private static AndroidJavaObject faceTrackingNative = null;
-#endif
+        /// <summary>
+        /// The face tracking native
+        /// </summary>
+        private AndroidJavaObject faceTrackingNative = null;
+
         /// <summary>
         /// The client handler
         /// </summary>
-        private EventHandler<FaceTrackingObject> trackingHandler;
+        private Action<FaceTrackingObject> trackingHandler;
         /// <summary>
         /// Occurs when [client handler].
         /// </summary>
-        public event EventHandler<FaceTrackingObject> TrackingHandler
+        public event Action<FaceTrackingObject> TrackingHandler
         {
             add
             {
@@ -84,6 +82,31 @@ namespace AvatarPluginForUnity
                 trackingHandler -= value;
 
             }
+        }
+
+        /// <summary>
+        /// Awakes this instance.
+        /// </summary>
+        void Awake()
+        {
+            if (_instance != null)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            _instance = this;
+            InitFaceTrackingNative();
+            DontDestroyOnLoad(gameObject);
+        }
+
+        /// <summary>
+        /// Initializes the face tracking native.
+        /// </summary>
+        private void InitFaceTrackingNative()
+        {
+#if !(UNITY_EDITOR || UNITY_STANDALONE_WIN)
+            this.faceTrackingNative = (new AndroidJavaClass("com.samsung.avatarnative.facetracking.FaceTrackingClient")).CallStatic<AndroidJavaObject>("instance");
+#endif
         }
 
         /// <summary>
@@ -141,7 +164,7 @@ namespace AvatarPluginForUnity
                 if (face != null)
                 {
                     if (trackingHandler != null)
-                        trackingHandler(this, face);
+                        trackingHandler(face);
                 }
             }
         }

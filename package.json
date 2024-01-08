@@ -1,29 +1,51 @@
 {
-    "name": "com.samsung.avatar-plugin-for-unity",
-    "displayName": "Avatar Plug-in for Unity",
-    "version": "4.0.6",
-    "unity": "2022.2",
-    "description": "Samsung Avatar Plug-in for Unity.\n\n",
-    "author":
+  "name": "com.samsung.avatar-plugin-for-unity",
+  "displayName": "Avatar Plug-in for Unity",
+  "version": "4.0.8",
+  "unity": "2023.2",
+  "description": "Samsung Avatar Plug-in for Unity.\n\n",
+  "author": {
+    "name": "Samsung Corp"
+  },
+  "dependencies": {
+    "com.unity.cloud.gltfast": "6.0.1"
+  },
+  "samples": [
     {
-        "name": "Samsung Corp"
+      "displayName": "Avatar Load",
+      "description": "This is a sample that can load Samsung Avatar. Two types of animation are supported: Humanoid and Generic.",
+      "path": "Samples~/Avatar Load",
+      "interactiveImport": true
     },
-    "dependencies":
     {
-        "com.atteneder.gltfast": "5.0.4"
+      "displayName": "AvatarLOD",
+      "description": "This is a sample that improves performance according to camera distance by applying Avatar's Material LOD.",
+      "path": "Samples~/AvatarLOD",
+      "interactiveImport": true
     },
-    "samples": [
-        {
-            "displayName": "AREmoji Load",
-            "description": "Loading AREmoji sample",
-            "path": "Samples~/AREmoji Load",
-	"interactiveImport": true
-        },
-        {
-            "displayName": "FaceTracking",
-            "description": "FaceTracking sample",
-            "path": "Samples~/FaceTracking",
-	"interactiveImport": true
-        }
-    ]
+    {
+      "displayName": "Dummy Avatar Load",
+      "description": "This is a sample that displays a pre-loaded dummy Avatar while the Avatar is loading.",
+      "path": "Samples~/Dummy Avatar Load",
+      "interactiveImport": true
+    },
+    {
+      "displayName": "MultiAvatar Load",
+      "description": "This is a sample of creating and combining Multi Avatars through the Mesh Combiner included in the Avatar Plugin. Check out the various options.",
+      "path": "Samples~/MultiAvatar Load",
+      "interactiveImport": true
+    },
+    {
+      "displayName": "FaceTracking",
+      "description": "This is a FaceTracking Sample that works on Android devices. There is a FaceTracking On/Off function and an Avatar application On/Off function.",
+      "path": "Samples~/FaceTracking",
+      "interactiveImport": true
+    },
+    {
+      "displayName": "GettingAvatar",
+      "description": "Will Be Supported - This is a sample that can load an Avatar created in Galaxy using a fileprovider",
+      "path": "Samples~/GettingAvatar",
+      "interactiveImport": true
+    }
+  ]
 }

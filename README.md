@@ -40,19 +40,17 @@ The Avatar Plug-in for Unity is validated in Unity version 2023.2.Xf1 and may wo
 <br>
 
 
-There is a dependency on glTFast, so you first need to import glTFast Pacakge into your project. The avatar plugin always follows the latest glTFast.<br>To import glTFast into the project, package manager -> Install package from URL... -> Enter "https://github.com/Unity-Technologies/com.unity.cloud.gltfast.git".
+here is a dependency on [glTFast](https://github.com/Unity-Technologies/com.unity.cloud.gltfast), so you need to import glTFast into your project first. Avatar Plug-in always follows the latest glTFast.
+To import the gltfast package into the project, go to Package Manage -> Install package by name.. -> Enter "com.unity.cloud.gltfast"
 <center>
-
-<img src="https://d3unf4s5rp9dfh.cloudfront.net/AREmoji_doc/ImportGLTFast.png"  width="900" alt="Figure 2: Import glTFast Pakage"/>
+<img src="https://d3unf4s5rp9dfh.cloudfront.net/AREmoji_doc/ImportGLTFast3.png" width="800" alt="Figure 3: Import GLTFast Pakage"/>
 </center>
 <br>
 
 
-Finally, you can import the Avatar Plug-in for Unity Package into your project.<br>
-To import Avatar Plugin for Unity into the project, package manager -> Install package from URL... -> Enter "https://github.com/Samsung/avatar-plugin-for-unity.git".
+Finally, import the Avatar Plug-in for Unity Package into Proejct. The easiest way to install is to download and open the [Installer Package](https://package-installer.glitch.me/v1/installer/OpenUPM/com.samsung.avatar-plugin-for-unity?registry=https%3A%2F%2Fpackage.openupm.com&scope=com.samsung)
 <center>
-
-<img src="https://d3unf4s5rp9dfh.cloudfront.net/AREmoji_doc/ImportAvatarPlugin.png" width="900" alt="Figure 3: Import Avatar Plug-in for Unity Pakage"/>
+<img src="https://d3unf4s5rp9dfh.cloudfront.net/AREmoji_doc/avatar-plugin-for-unity4.png" width="800" alt="Figure 3: Import Avatar Plug-in for Unity Pakage"/>
 </center>
 <br>
 
