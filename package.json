@@ -1,29 +1,15 @@
 {
     "name": "com.samsung.avatar-plugin-extention",
-    "displayName": "Avatar Plug-in for Unity",
+    "displayName": "Avatar Plug-in Extention",
     "version": "4.0.7",
     "unity": "2022.2",
-    "description": "Samsung Avatar Plug-in for Unity.\n\n",
+    "description": "Samsung Avatar Plug-in Extention.\n\n",
     "author":
     {
         "name": "Samsung Corp"
     },
     "dependencies":
     {
-        "com.atteneder.gltfast": "5.0.4"
-    },
-    "samples": [
-        {
-            "displayName": "AREmoji Load",
-            "description": "Loading AREmoji sample",
-            "path": "Samples~/AREmoji Load",
-	"interactiveImport": true
-        },
-        {
-            "displayName": "FaceTracking",
-            "description": "FaceTracking sample",
-            "path": "Samples~/FaceTracking",
-	"interactiveImport": true
-        }
-    ]
+        "com.samsung.avatar-plugin-for-unity": "4.0.6"
+    }
 }
