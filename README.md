@@ -1,4 +1,4 @@
-# Avatar Plug-in for Unity : glTFast Plug-in
+# Avatar Plug-in Extention
 ![Unity3D Version](https://img.shields.io/badge/unity3D-2022.2.Xf1-red) [![glTFast](https://img.shields.io/badge/glTFast-latest-blue.svg)](https://github.com/atteneder/glTFast/releases/tag/v5.0.4) [![GitHub license](https://img.shields.io/github/license/saltstack/salt)](https://github.com/Samsung/avatar-plugin-for-unity/blob/main/LICENSE.txt) ![AREmojiEditor](https://img.shields.io/badge/AREmojiEditor-v6.1.00.X-blue)
 ## Introduce
 [glTFast](https://github.com/atteneder/glTFast) is an open-source library for loading and rendering glTF™ (GL Transmission Format) 3D models in Unity.
