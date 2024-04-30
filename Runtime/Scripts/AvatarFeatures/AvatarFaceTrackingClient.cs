@@ -16,7 +16,6 @@
  *
  ******************************************************************/
 using System;
-using System.Collections;
 using UnityEngine;
 using static AvatarPluginForUnity.AvatarComponent;
 
@@ -51,10 +50,6 @@ namespace AvatarPluginForUnity
         /// </summary>
         private Transform r_eye_JNT = null;
         /// <summary>
-        /// The is initializing
-        /// </summary>
-        private bool IsInitializing = false;
-        /// <summary>
         /// The tracking handler
         /// </summary>
         private Action<FaceTrackingObject> trackingHandler = null;
@@ -62,79 +57,52 @@ namespace AvatarPluginForUnity
         void Start()
         {
             avatarComponent = GetComponent<AvatarComponent>();
-            avatarComponent.OnStatusChangedCallback += InitFaceTrackingClient;
             trackingHandler = new Action<FaceTrackingObject>(CallUpdateHandler);
             FaceTrackingCore.Instance.TrackingHandler += trackingHandler;
         }
 
-        private void InitFaceTrackingClient(LoadStatus componentLoadStatus)
+        public void InitFaceTrackingClient()
         {
-            if (componentLoadStatus.Equals(LoadStatus.DONE))
+            Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>(true);
+            foreach (Transform child_ in allChildren)
             {
-                Transform[] allChildren = gameObject.GetComponentsInChildren<Transform>(true);
-                foreach (Transform child_ in allChildren)
-                {
-                    if (l_eye_JNT != null && r_eye_JNT != null)
-                        break;
-                    else if (child_.name.Equals("r_eye_JNT"))
-                        r_eye_JNT = child_;
-                    else if (child_.name.Equals("l_eye_JNT"))
-                        l_eye_JNT = child_;
-                }
-                avatarblendshapeDriver = gameObject.GetComponentInChildren<AvatarBlendshapeDriver>();
-                avatarblendshapeDriver.isTracking = true;         
+                if (l_eye_JNT != null && r_eye_JNT != null)
+                    break;
+                else if (child_.name.Equals("r_eye_JNT"))
+                    r_eye_JNT = child_;
+                else if (child_.name.Equals("l_eye_JNT"))
+                    l_eye_JNT = child_;
             }
+            avatarblendshapeDriver = gameObject.GetComponentInChildren<AvatarBlendshapeDriver>();          
         }
 
         private void CallUpdateHandler(FaceTrackingObject face)
         {
             if (this.avatarblendshapeDriver == null)
             {
-                Debug.LogError("blendshapeDriver is null!!, Avatar should be loaded!!");
-            }
-            else
-            {
-                if (face != null)
-                {
-                    float[] weights = face.weights;
-
-                    avatarblendshapeDriver.FaceTackingUpdate(weights);
-
-                    float[] leftEyeRotation = face.leftEyeRotation;
-                    float[] rightEyeRotation = face.rightEyeRotation;
-                    l_eye_JNT.localRotation = Quaternion.AngleAxis(leftEyeRotation[3] * RAD_SEC, new Vector3(leftEyeRotation[0], -leftEyeRotation[1], leftEyeRotation[2]));
-                    r_eye_JNT.localRotation = Quaternion.AngleAxis(rightEyeRotation[3] * RAD_SEC, new Vector3(rightEyeRotation[0], -rightEyeRotation[1], rightEyeRotation[2]));
-                }
-            }
-        }
-
-        public void UpdateFaceBlendShape(FaceTrackingObject face)
-        {
-            if (avatarblendshapeDriver == null)
-            {
-                Debug.LogError("blendshapeDriver is null!!, Avatar should be loaded!!");
+                Debug.Log("blendshapeDriver is null!!, Avatar should be loaded!!");
             }
             else if (face != null)
             {
                 float[] weights = face.weights;
-                avatarblendshapeDriver.FaceTackingUpdate(weights);
+                avatarblendshapeDriver.UpdateBlendShapeWeights(weights);
                 float[] leftEyeRotation = face.leftEyeRotation;
                 float[] rightEyeRotation = face.rightEyeRotation;
-                l_eye_JNT.localRotation = Quaternion.AngleAxis(leftEyeRotation[3] * RAD_SEC, new Vector3(leftEyeRotation[0], 0f - leftEyeRotation[1], leftEyeRotation[2]));
-                r_eye_JNT.localRotation = Quaternion.AngleAxis(rightEyeRotation[3] * RAD_SEC, new Vector3(rightEyeRotation[0], 0f - rightEyeRotation[1], rightEyeRotation[2]));
+                l_eye_JNT.localRotation = Quaternion.AngleAxis(leftEyeRotation[3] * RAD_SEC, new Vector3(leftEyeRotation[0], -leftEyeRotation[1], leftEyeRotation[2]));
+                r_eye_JNT.localRotation = Quaternion.AngleAxis(rightEyeRotation[3] * RAD_SEC, new Vector3(rightEyeRotation[0], -rightEyeRotation[1], rightEyeRotation[2]));    
             }
         }
 
         public void ClearFaceBlendShape()
         {
-            if (avatarblendshapeDriver == null || IsInitializing)
+            if (avatarblendshapeDriver == null)
             {
-                Debug.LogError("blendshapeDriver is null!!, Avatar should be loaded!!. Waiting for Initialize");
+                Debug.Log("blendshapeDriver is null!!, Avatar should be loaded!!. Waiting for Initialize");
             }
             else
             {
                 float[] weights = new float[AvatarBlendshapeDriver.avatarBlendshapeList.Count];
-                avatarblendshapeDriver.FaceTackingUpdate(weights);
+                avatarblendshapeDriver.UpdateBlendShapeWeights(weights);
                 l_eye_JNT.localRotation = Quaternion.Euler(0f, -0.028f, 0f);
                 r_eye_JNT.localRotation = Quaternion.Euler(0f, -0.028f, 0f);
             }
@@ -147,8 +115,6 @@ namespace AvatarPluginForUnity
         {
             if (trackingHandler != null)
                 FaceTrackingCore.Instance.TrackingHandler += trackingHandler;
-            if (avatarblendshapeDriver != null)
-                avatarblendshapeDriver.isTracking = true;
         }
 
         /// <summary>
@@ -158,8 +124,6 @@ namespace AvatarPluginForUnity
         {
             if (trackingHandler != null)
                 FaceTrackingCore.Instance.TrackingHandler -= trackingHandler;
-            if (avatarblendshapeDriver != null)
-                avatarblendshapeDriver.isTracking = false;
         }
 
         /// <summary>
@@ -169,8 +133,6 @@ namespace AvatarPluginForUnity
         {
             if (trackingHandler != null)
                 FaceTrackingCore.Instance.TrackingHandler -= trackingHandler;
-            if (avatarblendshapeDriver != null)
-                avatarblendshapeDriver.isTracking = false;
         }
     }
 }

@@ -1,11 +1,8 @@
 using AvatarPluginForUnity;
 using System.Collections.Generic;
 using System.Linq;
-
 using UnityEngine;
-using static AvatarPluginForUnity.AvatarComponent;
 using static AvatarPluginForUnity.MaterialCombineOption;
-using static AvatarPluginForUnity.MeshCombineOption;
 
 [RequireComponent(typeof(AvatarComponent), typeof(LODGroup))]
 public class AvatarLODManager : MonoBehaviour
@@ -13,93 +10,96 @@ public class AvatarLODManager : MonoBehaviour
     private LODGroup avatarLODGroup = null;
     private AvatarComponent avatarComponent = null;
 
-    // Start is called before the first frame update
     void Start()
     {
         avatarComponent = GetComponent<AvatarComponent>();
-        avatarComponent.OnStatusChangedCallback += InitAvatarLODGroup;
         avatarLODGroup = GetComponent<LODGroup>();
     }
 
-    private void InitAvatarLODGroup(LoadStatus componentLoadStatus)
-    {
-        if (componentLoadStatus.Equals(LoadStatus.DONE))
+    public void InitAvatarLODGroup()
+    {  
+        avatarLODGroup.enabled = false;
+        LOD[] lods = avatarLODGroup.GetLODs();
+        int maxLodLength = System.Enum.GetValues(typeof(TextureResolutionRatio)).Length;
+        if (lods.Length > maxLodLength)
         {
-            avatarLODGroup.enabled = false;
-            LOD[] lods = avatarLODGroup.GetLODs();
-            int maxLodLength = System.Enum.GetValues(typeof(TextureResolutionRatio)).Length;
-            if (lods.Length > maxLodLength)
+            Debug.Log("LODGroup supports up to 4 levels of LOD!!");
+            return;
+        }
+
+        Renderer[] allChildren = GetComponentsInChildren<Renderer>(true);
+
+        foreach (Renderer renderer in allChildren)
+        {
+            int textureResolutionRatio = 2;
+
+            if (renderer is MeshRenderer)
             {
-                Debug.LogError("LODGroup supports up to 4 levels of LOD!!");
-                return;
+                MeshFilter meshFilter = renderer.gameObject.GetComponent<MeshFilter>();
+                if (meshFilter == null || meshFilter.mesh == null)
+                    continue;
+            }
+            else if (renderer is SkinnedMeshRenderer smr)
+            {
+                if (smr.gameObject.name.Equals("LoadNode") || smr.sharedMesh == null)
+                    continue;
             }
 
-            int textureResolutionRatio = 1;
-            MeshCombineOption meshCombineOption = avatarComponent.meshCombineOption.ToMeshCombineOption();          
-            if (!avatarComponent.useMeshCombine || !meshCombineOption.combineFlags.HasFlag(CombineFlags.UseMaterialCombine))
-                meshCombineOption.materialCombineOption.customMaterialData = null;
 
-            Renderer[] allChildren = GetComponentsInChildren<Renderer>(true);
-            for(int i=0;i< lods.Length; i++)
+            List<Renderer> renderers = lods[0].renderers.ToList();
+            renderers.Add(renderer);
+            lods[0].renderers = renderers.ToArray();
+
+            List<Material> rendererMaterials = renderer.materials.ToList();
+            for (int i = 1; i < lods.Length; i++)
             {
-                int meshIdx = 0;
-                List<Renderer> lodRendererGoup = new List<Renderer>();
-
-                foreach (Renderer renderer in allChildren)
+                string lodMeshName = renderer.gameObject.name + "_LOD_" + i;
+                GameObject lodObject = MakeSubNode(lodMeshName, renderer.gameObject.transform);
+                Renderer lodRenderer = null;
+                if (renderer is MeshRenderer)
                 {
-                    if (renderer is MeshRenderer)
-                    {
-                        MeshFilter meshFilter = renderer.gameObject.GetComponent<MeshFilter>();
-                        if (meshFilter == null || meshFilter.mesh == null)
-                            continue;
-                    }
-                    else if (renderer is SkinnedMeshRenderer smr)
-                    {
-                        if (smr.gameObject.name.Equals("LoadNode") || smr.sharedMesh == null)
-                            continue;
-                    }
-
-                    if (i == 0)
-                        lodRendererGoup.Add(renderer);
-                    else
-                    {
-                        string lodMeshName = "lodMeshGoup_" + i + "_" + meshIdx;
-                        GameObject lodObject = MakeSubNode(lodMeshName, renderer.gameObject.transform);
-                        Renderer lodRenderer = null;
-                        if (renderer is MeshRenderer)
-                        {
-                            Mesh mesh = renderer.gameObject.GetComponent<MeshFilter>().mesh;
-                            lodObject.AddComponent<MeshFilter>().mesh = mesh;
-                            lodRenderer = lodObject.AddComponent<MeshRenderer>();
-                            lodRenderer.bounds = renderer.bounds;
-                        }
-                        else if (renderer is SkinnedMeshRenderer smr) {
-                            lodRenderer = lodObject.AddComponent<SkinnedMeshRenderer>();
-                            ((SkinnedMeshRenderer)lodRenderer).sharedMesh = smr.sharedMesh;
-                            ((SkinnedMeshRenderer)lodRenderer).bones = smr.bones;
-                            ((SkinnedMeshRenderer)lodRenderer).rootBone = smr.rootBone;
-                            ((SkinnedMeshRenderer)lodRenderer).bounds = smr.bounds;
-                            ((SkinnedMeshRenderer)lodRenderer).ResetBounds();
-                            ((SkinnedMeshRenderer)lodRenderer).updateWhenOffscreen = true;
-                        }
-                        meshCombineOption.materialCombineOption.textureResolutionRatio = (TextureResolutionRatio)textureResolutionRatio;
-                        lodRenderer.material = AvatarMaterialCombiner.CopyNewMaterial(renderer.material, meshCombineOption);
-                        lodRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                        lodRenderer.receiveShadows = false;
-                        lodRendererGoup.Add(lodRenderer);
-                    }
-                    meshIdx++;
+                    Mesh mesh = renderer.gameObject.GetComponent<MeshFilter>().mesh;
+                    lodObject.AddComponent<MeshFilter>().mesh = mesh;
+                    lodRenderer = lodObject.AddComponent<MeshRenderer>();
+                    lodRenderer.bounds = renderer.bounds;
                 }
-                lods[i].renderers = lodRendererGoup.ToArray();
+                else if (renderer is SkinnedMeshRenderer smr)
+                {
+                    lodRenderer = lodObject.AddComponent<SkinnedMeshRenderer>();
+                    ((SkinnedMeshRenderer)lodRenderer).sharedMesh = smr.sharedMesh;
+                    ((SkinnedMeshRenderer)lodRenderer).bones = smr.bones;
+                    ((SkinnedMeshRenderer)lodRenderer).rootBone = smr.rootBone;
+                    ((SkinnedMeshRenderer)lodRenderer).bounds = smr.bounds;
+                    ((SkinnedMeshRenderer)lodRenderer).ResetBounds();
+                    ((SkinnedMeshRenderer)lodRenderer).updateWhenOffscreen = true;
+                }
+                List<Material> lodMaterials = new List<Material>();
+
+                foreach (var mat in rendererMaterials)
+                    lodMaterials.Add(AvatarMaterialCombiner.CopyNewMaterial(mat, (TextureResolutionRatio)textureResolutionRatio));
+
+                lodRenderer.materials = lodMaterials.ToArray();
+
+                lodRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                lodRenderer.receiveShadows = false;
+
+
+                List<Renderer> _renderers = lods[i].renderers.ToList();
+                _renderers.Add(lodRenderer);
+                lods[i].renderers = _renderers.ToArray();
                 textureResolutionRatio *= 2;
             }
-            avatarLODGroup.SetLODs(lods);
-            avatarLODGroup.RecalculateBounds();
-            avatarLODGroup.enabled = true;
-            AvatarBlendshapeDriver blendshapeDriver = avatarComponent.loadNode.GetComponent<AvatarBlendshapeDriver>();
-            if (blendshapeDriver != null)
-                blendshapeDriver.InitBlendshapeDriver();
+             
         }
+        
+
+        avatarLODGroup.SetLODs(lods);
+        avatarLODGroup.RecalculateBounds();
+        avatarLODGroup.enabled = true;
+        AvatarBlendshapeDriver blendshapeDriver = avatarComponent.GetComponentInChildren<AvatarBlendshapeDriver>();
+        if (blendshapeDriver != null)
+            blendshapeDriver.InitBlendshapeDriver();
+        
     }
 
     private bool IsOnJNTNode(Transform node)

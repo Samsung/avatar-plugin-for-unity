@@ -1,19 +1,19 @@
 {
   "name": "com.samsung.avatar-plugin-for-unity",
   "displayName": "Avatar Plug-in for Unity",
-  "version": "4.0.8",
+  "version": "4.0.9",
   "unity": "2023.2",
   "description": "Samsung Avatar Plug-in for Unity.\n\n",
   "author": {
     "name": "Samsung Corp"
   },
   "dependencies": {
-    "com.unity.cloud.gltfast": "6.0.1"
+    "com.unity.cloud.gltfast": "6.4.0"
   },
   "samples": [
     {
       "displayName": "Avatar Load",
-      "description": "This is a sample that can load Samsung Avatar. Two types of animation are supported: Humanoid and Generic.",
+      "description": "This is a sample that can load Samsung Avatar. ",
       "path": "Samples~/Avatar Load",
       "interactiveImport": true
     },
@@ -24,18 +24,6 @@
       "interactiveImport": true
     },
     {
-      "displayName": "Dummy Avatar Load",
-      "description": "This is a sample that displays a pre-loaded dummy Avatar while the Avatar is loading.",
-      "path": "Samples~/Dummy Avatar Load",
-      "interactiveImport": true
-    },
-    {
-      "displayName": "MultiAvatar Load",
-      "description": "This is a sample of creating and combining Multi Avatars through the Mesh Combiner included in the Avatar Plugin. Check out the various options.",
-      "path": "Samples~/MultiAvatar Load",
-      "interactiveImport": true
-    },
-    {
       "displayName": "FaceTracking",
       "description": "This is a FaceTracking Sample that works on Android devices. There is a FaceTracking On/Off function and an Avatar application On/Off function.",
       "path": "Samples~/FaceTracking",
@@ -43,8 +31,14 @@
     },
     {
       "displayName": "GettingAvatar",
-      "description": "Will Be Supported - This is a sample that can load an Avatar created in Galaxy using a fileprovider",
+      "description": "This is a sample that can load an Avatar created in Galaxy using a fileprovider \nPlease refer to README.md -> GettingAvatar Sample \non https://github.com/Samsung/avatar-plugin-for-unity",
       "path": "Samples~/GettingAvatar",
+      "interactiveImport": true
+    },
+    {
+      "displayName": "HairSimulation",
+      "description": "This sample is a hair/accessory simulation sample scene.",
+      "path": "Samples~/HairSimulation",
       "interactiveImport": true
     }
   ]

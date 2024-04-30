@@ -2,8 +2,8 @@
     "name": "AvatarPluginForUnity",
     "rootNamespace": "",
     "references": [
-        "GUID:a42927d1d4a3b4cda9b076a7adecb9cc",
-        "GUID:d2edc3a3bf019154eb31f2b49d8941b1"
+        "glTFast",
+        "EditorAssembly"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

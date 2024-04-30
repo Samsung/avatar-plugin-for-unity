@@ -56,25 +56,6 @@ namespace AvatarPluginForUnity
         /// </summary>
         private BodyType _bodyType = BodyType.Female;
         /// <summary>
-        /// Gets the avatar bone tamplate.
-        /// </summary>
-        /// <value>
-        /// The avatar bone tamplate.
-        /// </value>
-        private Dictionary<BodyType, Dictionary<string, Dictionary<string, List<float>>>> avatarBoneTamplate 
-        { 
-            get 
-            {
-                if (_avatarBoneTamplate == null)
-                    _avatarBoneTamplate = GetPoseData();            
-                return _avatarBoneTamplate;
-            } 
-        }
-        /// <summary>
-        /// The avatar bone tamplate
-        /// </summary>
-        private static Dictionary<BodyType, Dictionary<string, Dictionary<string, List<float>>>> _avatarBoneTamplate = null;
-        /// <summary>
         /// The load node
         /// </summary>
         private GameObject loadNode;
@@ -86,7 +67,6 @@ namespace AvatarPluginForUnity
         {
             this.loadNode = loadNode;
             ReDefineNodeStructure();
-            SetAvatarDefaultRig(GetChildGameObject(loadNode, NodeDefines.HIP_JNT).transform, avatarBoneTamplate[bodyType]);
         }
         /// <summary>
         /// Res the define node structure.
@@ -124,32 +104,6 @@ namespace AvatarPluginForUnity
             }
         }
         /// <summary>
-        /// The setAvatarDefaultRig.
-        /// </summary>
-        /// <param name="node">The node<see cref="Transform" />.</param>
-        /// <param name="boneTamplate">The bone tamplate.</param>
-        private void SetAvatarDefaultRig(Transform node , Dictionary<string, Dictionary<string, List<float>>> boneTamplate)
-        {
-
-            Queue<Transform> childrenQueue = new Queue<Transform>();
-            childrenQueue.Enqueue(node);
-            while (childrenQueue.Count > 0)
-            {
-                Transform dequeueNode = childrenQueue.Dequeue();
-                if (boneTamplate.ContainsKey(dequeueNode.name))
-                {
-                    List<float> pos = boneTamplate[dequeueNode.name]["m_LocalPosition"];
-                    List<float> rot = boneTamplate[dequeueNode.name]["m_LocalRotation"];
-                    //List<float> scl = boneTamplate[dequeueNode.name]["m_LocalScale"];
-                    dequeueNode.transform.localPosition = new Vector3(pos[0], pos[1], pos[2]);
-                    dequeueNode.transform.localEulerAngles = new Vector3(rot[0], rot[1], rot[2]);
-                    //node.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
-                }
-                for (int idx = 0; idx < dequeueNode.childCount; idx++)
-                    childrenQueue.Enqueue(dequeueNode.GetChild(idx));
-            }
-        }
-        /// <summary>
         /// Gets the constructed avatar.
         /// </summary>
         /// <returns></returns>
@@ -157,58 +111,6 @@ namespace AvatarPluginForUnity
         {
             return new AvatarConstructor(loadNode.transform.parent.gameObject).ConstructAvatar();
         }
-        /// <summary>
-        /// Sets the body type pose data.
-        /// </summary>
-        /// <returns></returns>
-        private static Dictionary<BodyType, Dictionary<string, Dictionary<string, List<float>>>> GetPoseData()
-        {
-            PoseData mAvatarDefaultRig = JsonUtility.FromJson<PoseData>((Resources.Load("AvatarDefaultRig") as TextAsset).text);
-            Dictionary<BodyType, Dictionary<string, Dictionary<string, List<float>>>> boneTamplate = new Dictionary<BodyType, Dictionary<string, Dictionary<string, List<float>>>>();
-            boneTamplate[BodyType.Female] = GetBodyTypePoseData(mAvatarDefaultRig, BodyType.Female);
-            boneTamplate[BodyType.Male] = GetBodyTypePoseData(mAvatarDefaultRig, BodyType.Male);
-            boneTamplate[BodyType.Junior] = GetBodyTypePoseData(mAvatarDefaultRig, BodyType.Junior);
-            return boneTamplate;
-        }
 
-        /// <summary>
-        /// Gets the body type pose data.
-        /// </summary>
-        /// <param name="mAvatarDefaultRig">The m avatar default rig.</param>
-        /// <param name="bodyType">Type of the body.</param>
-        /// <returns></returns>
-        private static Dictionary<string, Dictionary<string, List<float>>> GetBodyTypePoseData(PoseData mAvatarDefaultRig, BodyType bodyType)
-        {
-            List<BoneData> mBodyTypeBoneData = bodyType.Equals(BodyType.Female) ? mAvatarDefaultRig.female : bodyType.Equals(BodyType.Male) ? mAvatarDefaultRig.male : mAvatarDefaultRig.junior;
-
-            Dictionary<string, Dictionary<string, List<float>>> bodyTypeBoneTamplate = new Dictionary<string, Dictionary<string, List<float>>>();
-            foreach (var boneData in mBodyTypeBoneData)
-            {
-                Dictionary<string, List<float>> transformVals = new Dictionary<string, List<float>>();
-                transformVals["m_LocalPosition"] = boneData.m_LocalPosition;
-                transformVals["m_LocalRotation"] = boneData.m_LocalRotation;
-                transformVals["m_LocalScale"] = boneData.m_LocalScale;
-                bodyTypeBoneTamplate[boneData.name] = transformVals;
-            }
-            return bodyTypeBoneTamplate;
-        }
-
-        /// <summary>
-        /// The getChildGameObject.
-        /// </summary>
-        /// <param name="avatar">The avatar<see cref="GameObject" />.</param>
-        /// <param name="name">The name<see cref="string" />.</param>
-        /// <returns>
-        /// The <see cref="GameObject" />.
-        /// </returns>
-        internal static GameObject GetChildGameObject(GameObject avatar, string name)
-        {
-            Transform[] allChildren = avatar.GetComponentsInChildren<Transform>(true);
-            foreach (Transform child in allChildren)
-                if (child.name == name)
-                    return child.gameObject;
-
-            return null;
-        }
     }
 }

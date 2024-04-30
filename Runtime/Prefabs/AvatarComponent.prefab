@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5559090057722895158}
   - component: {fileID: 2006937202170790621}
-  - component: {fileID: 6568724316520260069}
+  - component: {fileID: 2288524133123661055}
   m_Layer: 0
   m_Name: AvatarComponent
   m_TagString: Untagged
@@ -28,7 +28,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -45,19 +45,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac34abcd402cace4d9b832a1fd3cc38f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  loadOnStartUp: 1
-  assetLocation: 0
-  loadType: 0
-  Url: 
-  useMeshCombine: 1
-  meshCombineOption:
-    combineFlags: 11
-    materialCombineOption:
-      textureResolutionRatio: 1
-      textureAtlasOptimization: 1
-      customMaterialData: {fileID: 0}
+  loadOption:
+    loadOnStartUp: 1
+    assetLocation: 0
+    loadType: 0
+    Url: /Basemodel_female/model.gltf
+  renderOption:
+    useMeshCombine: 0
+    meshCombineOption:
+      separateHeadBody: 0
+      combineFlags: 2
+      materialCombineOption:
+        textureResolutionRatio: 1
+        textureAtlasOptimization: 1
+    useURPShader: 1
+  renderingOption:
+    useMeshCombine: 0
+    meshCombineOption:
+      separateHeadBody: 0
+      combineFlags: 6
+      materialCombineOption:
+        textureResolutionRatio: 1
+        textureAtlasOptimization: 1
+    useURPShader: 0
+  useHairSimulation: 0
+  hairSimulationOption:
+    _AvatarCollider: 1
+    _IntensityMultiplier: 1
   animatorType: 0
---- !u!95 &6568724316520260069
+--- !u!95 &2288524133123661055
 Animator:
   serializedVersion: 7
   m_ObjectHideFlags: 0
@@ -67,7 +83,7 @@ Animator:
   m_GameObject: {fileID: 2006937202170790620}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 35d554b64cd5bd14dba1bfd292a53469, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

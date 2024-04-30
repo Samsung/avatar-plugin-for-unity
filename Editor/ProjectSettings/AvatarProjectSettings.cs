@@ -16,12 +16,11 @@
  *
  ******************************************************************/
 #if (UNITY_EDITOR || UNITY_STANDALONE_WIN)
-using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Rendering;
+using GLTFast;
 
 namespace AvatarPluginForUnity
 {
@@ -32,15 +31,6 @@ namespace AvatarPluginForUnity
     [InitializeOnLoad]
     public class AvatarProjectSettings
     {
-        /// <summary>
-        /// The symbols
-        /// </summary>
-        private static readonly string[] Symbols = new string[] { /*"GLTFAST_SAFE"*/ };
-
-        /// <summary>
-        /// The shaders
-        /// </summary>
-        private static readonly string[] Shaders = new string[] { "glTF/PbrMetallicRoughness" };
 
         /// <summary>
         /// Initializes the <see cref="AvatarProjectSettings" /> class.
@@ -56,16 +46,14 @@ namespace AvatarPluginForUnity
         private static void CallProjectSettings()
         {
             //For All
-            BuiltInShaders();
-
-            //For Default(Window/Mac Etc..)
-            //if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
-            //    ScriptCompilation(NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup));
+            AddBuiltInShaders("glTF/PbrMetallicRoughness");
+            if (RenderPipelineUtils.RenderPipeline.Equals(GLTFast.RenderPipeline.Universal))
+                AddBuiltInShaders("Shader Graphs/glTF-pbrMetallicRoughness");
 
             //For Android
             Rendering();
             Configuration();
-            //ScriptCompilation(NamedBuildTarget.Android);
+
         }
 
         /// <summary>
@@ -73,12 +61,6 @@ namespace AvatarPluginForUnity
         /// </summary>
         private static void Rendering()
         {
-            //Set ColorSpace
-            //PlayerSettings.colorSpace = ColorSpace.Linear;
-
-            //Set GraphicsAPI to Auto
-            //PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, true);
-
             //Set NormalMapEncodin to XYZ
             PlayerSettings.SetNormalMapEncoding(NamedBuildTarget.Android, NormalMapEncoding.XYZ);
         }
@@ -100,52 +82,37 @@ namespace AvatarPluginForUnity
         }
 
         /// <summary>
-        /// Scripts the compilation.
-        /// </summary>
-        /// <param name="targetGroup">The target group.</param>
-        private static void ScriptCompilation(NamedBuildTarget buildTarget)
-        {
-            //Set Script Compilation
-            string definesString = PlayerSettings.GetScriptingDefineSymbols(buildTarget);
-            List<string> allDefines = definesString.Split(';').ToList();
-            allDefines.AddRange(Symbols.Except(allDefines));
-            PlayerSettings.SetScriptingDefineSymbols(buildTarget,string.Join(";", allDefines.ToArray()));
-        }
-
-        /// <summary>
         /// Builts the in shaders.
         /// </summary>
-        private static void BuiltInShaders()
+        private static void AddBuiltInShaders(string shaderName)
         {
             //Set BuiltIn Shaders
-            foreach (var shaderName in Shaders)
+            var shader = Shader.Find(shaderName);
+            if (shader == null)
+                return;
+            var graphicsSettingsObj = AssetDatabase.LoadAssetAtPath<GraphicsSettings>("ProjectSettings/GraphicsSettings.asset");
+            var serializedObject = new SerializedObject(graphicsSettingsObj);
+            var arrayProp = serializedObject.FindProperty("m_AlwaysIncludedShaders");
+            bool hasShader = false;
+            for (int i = 0; i < arrayProp.arraySize; ++i)
             {
-                var shader = Shader.Find(shaderName);
-                if (shader == null)
-                    return;
-                var graphicsSettingsObj = AssetDatabase.LoadAssetAtPath<GraphicsSettings>("ProjectSettings/GraphicsSettings.asset");
-                var serializedObject = new SerializedObject(graphicsSettingsObj);
-                var arrayProp = serializedObject.FindProperty("m_AlwaysIncludedShaders");
-                bool hasShader = false;
-                for (int i = 0; i < arrayProp.arraySize; ++i)
+                var arrayElem = arrayProp.GetArrayElementAtIndex(i);
+                if (shader == arrayElem.objectReferenceValue)
                 {
-                    var arrayElem = arrayProp.GetArrayElementAtIndex(i);
-                    if (shader == arrayElem.objectReferenceValue)
-                    {
-                        hasShader = true;
-                        break;
-                    }
-                }
-                if (!hasShader)
-                {
-                    int arrayIndex = arrayProp.arraySize;
-                    arrayProp.InsertArrayElementAtIndex(arrayIndex);
-                    var arrayElem = arrayProp.GetArrayElementAtIndex(arrayIndex);
-                    arrayElem.objectReferenceValue = shader;
-                    serializedObject.ApplyModifiedProperties();
-                    AssetDatabase.SaveAssets();
+                    hasShader = true;
+                    break;
                 }
             }
+            if (!hasShader)
+            {
+                int arrayIndex = arrayProp.arraySize;
+                arrayProp.InsertArrayElementAtIndex(arrayIndex);
+                var arrayElem = arrayProp.GetArrayElementAtIndex(arrayIndex);
+                arrayElem.objectReferenceValue = shader;
+                serializedObject.ApplyModifiedProperties();
+                AssetDatabase.SaveAssets();
+            }
+            
         }
     }
 }

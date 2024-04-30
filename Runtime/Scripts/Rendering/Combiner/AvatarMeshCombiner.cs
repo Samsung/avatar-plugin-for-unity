@@ -22,6 +22,8 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using static UnityEngine.Object;
 using static AvatarPluginForUnity.AvatarMaterialCombiner;
+using static AvatarPluginForUnity.MaterialCombineOption;
+using UnityEngine.XR;
 
 namespace AvatarPluginForUnity
 {
@@ -53,40 +55,49 @@ namespace AvatarPluginForUnity
         /// </summary>
         Dictionary<(string, Mesh), BlendShapeData> blendFramesDic = new Dictionary<(string, Mesh), BlendShapeData>();
         /// <summary>
-        /// The combine option
+        /// The combine flags
         /// </summary>
-        private MeshCombineOption meshCombineOption;
+        private CombineFlags combineFlags;
+        /// <summary>
+        /// The material combine option
+        /// </summary>
+        private MaterialCombineOption materialCombineOption;
         /// <summary>
         /// The mesh combine descriptors set
         /// </summary>
         private List<List<MeshCombineDescriptor>> meshCombineDescriptorsSet;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AvatarMeshCombiner"/> class.
+        /// Initializes a new instance of the <see cref="AvatarMeshCombiner" /> class.
         /// </summary>
-        /// <param name="combineOption">The combine option.</param>
-        public AvatarMeshCombiner(MeshCombineOption meshCombineOption)
+        /// <param name="combineFlags">The combine flags.</param>
+        /// <param name="materialCombineOption">The material combine option.</param>
+        public AvatarMeshCombiner(CombineFlags combineFlags, MaterialCombineOption materialCombineOption)
         {
-            this.meshCombineOption = meshCombineOption;
+            this.combineFlags = combineFlags;
+            this.materialCombineOption = materialCombineOption;
         }
         /// <summary>
         /// Combines the specified targetMeshes.
         /// </summary>
         /// <param name="targetMeshes">The targetMeshes.</param>
         /// <param name="combinedMesh">The combined mesh.</param>
-        /// <param name="combineOption">The combine option.</param>
-        public static void CombineSkinnedMesh(SkinnedMeshRenderer[] targetMeshes,SkinnedMeshRenderer combinedMesh, MeshCombineOption meshCombineOption)
+        /// <param name="combineFlags">The combine flags.</param>
+        /// <param name="materialCombineOption">The material combine option.</param>
+        public static void CombineSkinnedMesh(SkinnedMeshRenderer[] targetMeshes, SkinnedMeshRenderer combinedMesh, CombineFlags combineFlags, MaterialCombineOption materialCombineOption)
         {
-            if (targetMeshes==null|| targetMeshes.Length==0 || (meshCombineOption.combineFlags.HasFlag(MeshCombineOption.CombineFlags.UseMaterialCombine) && !MaterialCombineCheck(targetMeshes, meshCombineOption.materialCombineOption.customMaterialData)))
+            if (targetMeshes == null || targetMeshes.Length == 0 || (combineFlags.HasFlag(CombineFlags.UseMaterialCombine) && !MaterialCombineCheck(targetMeshes)))
                 return;
-            using (AvatarMeshCombiner combiner = new AvatarMeshCombiner(meshCombineOption))
+
+
+            using (AvatarMeshCombiner combiner = new AvatarMeshCombiner(combineFlags, materialCombineOption))
             {
                 combiner.ApplySkinnedMeshs(targetMeshes);
                 combiner.Combine(combinedMesh);
             }
-              
 
-            if (meshCombineOption.combineFlags.HasFlag(MeshCombineOption.CombineFlags.RemoveTargetMeshes))
+
+            if (combineFlags.HasFlag(CombineFlags.RemoveTargetMeshes))
                 RemoveTargetMeshs(targetMeshes);
             Resources.UnloadUnusedAssets();
         }
@@ -97,34 +108,32 @@ namespace AvatarPluginForUnity
         /// <param name="targetMeshes">The target meshes.</param>
         private void ApplySkinnedMeshs(SkinnedMeshRenderer[] targetMeshes)
         {
-
-            this.meshCombineDescriptorsSet = InitMeshCombineDescriptor(meshCombineOption, targetMeshes);
-
             Matrix4x4 referenceTransform = Matrix4x4.identity;
-            Dictionary<Transform, Dictionary<Matrix4x4, int>> bindposeDic = new Dictionary<Transform, Dictionary<Matrix4x4, int>>();
-            int bindposeCount = 0;
-            Dictionary<Transform, List<Matrix4x4>> bindposeSubDic = new Dictionary<Transform, List<Matrix4x4>>();
-            Dictionary<SkinnedMeshRenderer, (BoneWeight[], Matrix4x4, Mesh)> meshCombineDic = new Dictionary<SkinnedMeshRenderer, (BoneWeight[], Matrix4x4, Mesh)>();
-            Dictionary<int, int> boneIndexMap = new Dictionary<int, int>();
+            Dictionary<Transform, List<Matrix4x4>> bonePoseListDic = new Dictionary<Transform, List<Matrix4x4>>();
+            Dictionary<(Transform, Matrix4x4), int> boneIdxDic = new Dictionary<(Transform, Matrix4x4), int>();
+
+
             HashSet<int> boneCheck = new HashSet<int>();
             List<Matrix4x4> bindposeList = new List<Matrix4x4>();
+            Dictionary<int, int> newBoneIdxDic = new Dictionary<int, int>();
 
+            this.meshCombineDescriptorsSet = InitMeshCombineDescriptor(targetMeshes, combineFlags, materialCombineOption);
+            Dictionary<SkinnedMeshRenderer, (BoneWeight[], Matrix4x4, Mesh)> meshCombineDic = new Dictionary<SkinnedMeshRenderer, (BoneWeight[], Matrix4x4, Mesh)>();
             List<MeshCombineDescriptor> meshCombineDescriptors = meshCombineDescriptorsSet.SelectMany(item => item).ToList();
             foreach (var meshCombineDescriptor in meshCombineDescriptors)
             {
-
                 SkinnedMeshRenderer parentMesh = meshCombineDescriptor.parentMesh;
 
                 if (!meshCombineDic.ContainsKey(parentMesh))
                 {
 
-                    boneIndexMap.Clear();
-                    boneCheck.Clear();
                     bindposeList.Clear();
+                    newBoneIdxDic.Clear();
+                    boneCheck.Clear();
 
                     var orgMesh = parentMesh.sharedMesh;
 
-                    if (meshCombineDic.Count==0)
+                    if (meshCombineDic.Count == 0)
                         bounds = parentMesh.bounds;
                     else
                         bounds.Encapsulate(parentMesh.bounds);
@@ -166,84 +175,67 @@ namespace AvatarPluginForUnity
                             boneCheck.Add(weight.boneIndex2);
                         if (weight.weight3 > 0)
                             boneCheck.Add(weight.boneIndex3);
-
-
-
                     }
 
-                    if (bindposeList.Count > 0)
-                        for (int i = 0; i < bindposeList.Count; i++)
+                    for (int i = 0; i < bones.Length; i++)
+                    {
+                        if (!boneCheck.Contains(i)) continue;
+                        Matrix4x4 bindpose = bindposeList[i] * inverseReTransform;
+                        bool isApproximated = false;
+                        List<Matrix4x4> boneBindPoseList;
+                        if (bonePoseListDic.TryGetValue(bones[i], out boneBindPoseList))
                         {
-                            var bone = bones[i];
-                            if (!boneCheck.Contains(i)) continue;
-
-                            var poseMat = bindposeList[i] * inverseReTransform;
-
-                            if (!bindposeSubDic.ContainsKey(bone))
-                                bindposeSubDic[bone] = new List<Matrix4x4>();
-                            bool IsApproximated = false;
-                            foreach (var matrix in bindposeSubDic[bone])
+                            foreach (var boneBindPose in boneBindPoseList)
                             {
-                                IsApproximated = true;
-                                for (var j = 0; j < 16; j++)
-                                    if ((Math.Abs(poseMat[j] - matrix[j]) > 0.001f/*epsilon*/))
+                                for (int j = 0; j < 16; j++)
+                                {
+                                    isApproximated = true;
+                                    if (!Mathf.Approximately(bindpose[j], boneBindPose[j]))
                                     {
-                                        IsApproximated = false;
+                                        isApproximated = false;
                                         break;
                                     }
-                                if (IsApproximated)
+                                }
+                                if (isApproximated)
                                 {
-                                    poseMat = matrix;
+                                    newBoneIdxDic[i] = boneIdxDic[(bones[i], boneBindPose)];
                                     break;
                                 }
                             }
-                            if (!IsApproximated) bindposeSubDic[bone].Add(poseMat);
-
-                            if (!bindposeDic.ContainsKey(bone) || !bindposeDic[bone].ContainsKey(poseMat))
-                            {
-                                if (!bindposeDic.ContainsKey(bone))
-                                    bindposeDic[bone] = new Dictionary<Matrix4x4, int>();
-
-                                bindposeDic[bone][poseMat] = boneIndexMap[i] = bindposeCount++;
-                                allBoneList.Add(bone);
-                                allBindposeList.Add(poseMat);
-                            }
-                            else
-                                boneIndexMap[i] = bindposeDic[bone][poseMat];
                         }
+                        if (!isApproximated)
+                        {
+                            newBoneIdxDic[i] = boneIdxDic[(bones[i], bindpose)] = allBoneList.Count;
+                            allBoneList.Add(bones[i]);
+                            allBindposeList.Add(bindpose);
+                            if (!bonePoseListDic.ContainsKey(bones[i]))
+                                bonePoseListDic[bones[i]] = new List<Matrix4x4>();
+
+                            bonePoseListDic[bones[i]].Add(bindpose);
+                        }
+                    }
 
                     for (int i = 0, idx; i < boneWeightList.Length; i++)
                     {
-                        var weight = boneWeightList[i];
-                        if (boneIndexMap.TryGetValue(weight.boneIndex0, out idx))
-                            weight.boneIndex0 = idx;
+                        BoneWeight boneWeight = boneWeightList[i];
+
+                        if (boneWeightList[i].weight0 > 0 && newBoneIdxDic.TryGetValue(boneWeight.boneIndex0, out idx))
+                            boneWeight.boneIndex0 = idx;
                         else
-                        {
-                            weight.boneIndex0 = 0;
-                            weight.weight0 = 0;
-                        }
-                        if (boneIndexMap.TryGetValue(weight.boneIndex1, out idx))
-                            weight.boneIndex1 = idx;
+                            boneWeight.weight0 = boneWeight.boneIndex0 = 0;
+                        if (boneWeightList[i].weight1 > 0 && newBoneIdxDic.TryGetValue(boneWeight.boneIndex1, out idx))
+                            boneWeight.boneIndex1 = idx;
                         else
-                        {
-                            weight.boneIndex1 = 0;
-                            weight.weight1 = 0;
-                        }
-                        if (boneIndexMap.TryGetValue(weight.boneIndex2, out idx))
-                            weight.boneIndex2 = idx;
+                            boneWeight.weight1 = boneWeight.boneIndex1 = 0;
+                        if (boneWeightList[i].weight2 > 0 && newBoneIdxDic.TryGetValue(boneWeight.boneIndex2, out idx))
+                            boneWeight.boneIndex2 = idx;
                         else
-                        {
-                            weight.boneIndex2 = 0;
-                            weight.weight2 = 0;
-                        }
-                        if (boneIndexMap.TryGetValue(weight.boneIndex3, out idx))
-                            weight.boneIndex3 = idx;
+                            boneWeight.weight2 = boneWeight.boneIndex2 = 0;
+                        if (boneWeightList[i].weight3 > 0 && newBoneIdxDic.TryGetValue(boneWeight.boneIndex3, out idx))
+                            boneWeight.boneIndex3 = idx;
                         else
-                        {
-                            weight.boneIndex3 = 0;
-                            weight.weight3 = 0;
-                        }
-                        boneWeightList[i] = weight;
+                            boneWeight.weight3 = boneWeight.boneIndex3 = 0;
+                        boneWeightList[i] = boneWeight;
                     }
                     meshCombineDic[parentMesh] = (boneWeightList, resultTransform, mesh);
                 }
@@ -251,16 +243,16 @@ namespace AvatarPluginForUnity
                 var _boneWeightList = meshCombineDic[parentMesh].Item1;
                 var _resultTransform = meshCombineDic[parentMesh].Item2;
                 var _mesh = meshCombineDic[parentMesh].Item3;
-                var copyMaterial = meshCombineOption.combineFlags.HasFlag(MeshCombineOption.CombineFlags.UseMaterialCombine) ? false : meshCombineOption.combineFlags.HasFlag(MeshCombineOption.CombineFlags.RemoveTargetMeshes) ? true : false;
+                var copyMaterial = combineFlags.HasFlag(CombineFlags.UseMaterialCombine) ? false : combineFlags.HasFlag(CombineFlags.RemoveTargetMeshes) ? true : false;
 
                 CombineInstance combineInstance = meshCombineDescriptor.subMesCombineInstance;
                 Material material = parentMesh.materials[combineInstance.subMeshIndex];
                 SubMeshDescriptor subMeshDescriptor = combineInstance.mesh.GetSubMesh(combineInstance.subMeshIndex);
                 combineInstance.transform = _resultTransform;
                 meshCombineDescriptor.subMesCombineInstance = combineInstance;
-                meshCombineDescriptor.material = copyMaterial ? CopyNewMaterial(material, meshCombineOption) : material;
+                meshCombineDescriptor.material = copyMaterial ? CopyNewMaterial(material, materialCombineOption.textureResolutionRatio) : material;
                 meshCombineDescriptor.boneWeights = new ArraySegment<BoneWeight>(_boneWeightList, subMeshDescriptor.firstVertex, subMeshDescriptor.vertexCount);
-         
+
             }
         }
 
@@ -295,9 +287,9 @@ namespace AvatarPluginForUnity
                 }
             }
 
-            if (meshCombineOption.combineFlags.HasFlag(MeshCombineOption.CombineFlags.UseMaterialCombine))
+            if (combineFlags.HasFlag(CombineFlags.UseMaterialCombine))
             {
-                if (!meshCombineOption.materialCombineOption.textureAtlasOptimization || (meshCombineOption.materialCombineOption.textureAtlasOptimization && meshCombineDescriptorsSet.Count==1))
+                if (!materialCombineOption.textureAtlasOptimization || (materialCombineOption.textureAtlasOptimization && meshCombineDescriptorsSet.Count == 1))
                 {
                     combinedNewMesh.CombineMeshes(combineInstanceList.ToArray(), true, true);
                     Material combinedMat = GetCombinedMaterial(combinedNewMesh, allCombineDescriptors);
@@ -323,7 +315,7 @@ namespace AvatarPluginForUnity
                     foreach (var optimizedMesh in optimizedMeshList)
                         DestroyImmediate(optimizedMesh);
                     Resources.UnloadUnusedAssets();
-                }          
+                }
             }
             else
             {
@@ -331,10 +323,10 @@ namespace AvatarPluginForUnity
                 resultMaterial.AddRange(allCombineDescriptors.Select(x => x.material));
             }
 
-            combinedNewMesh.boneWeights =  allCombineDescriptors.Select(x => x.boneWeights).Where(x => x != null).SelectMany(x => x).ToArray();
+            combinedNewMesh.boneWeights = allCombineDescriptors.Select(x => x.boneWeights).Where(x => x != null).SelectMany(x => x).ToArray();
             combinedNewMesh.bindposes = bindPoseArray;
 
-            if (!meshCombineOption.combineFlags.HasFlag(MeshCombineOption.CombineFlags.RemoveBlendshapes))
+            if (!combineFlags.HasFlag(CombineFlags.RemoveBlendshapes))
             {
                 int offset = 0;
                 foreach (var combine in combineInstanceList)
@@ -407,7 +399,7 @@ namespace AvatarPluginForUnity
         private Material GetCombinedMaterial(Mesh combinedNewMesh, List<MeshCombineDescriptor> combineDescriptorGroup)
         {
             List<Material> materialGroup = combineDescriptorGroup.Select(x => x.material).ToList();
-            var (materialTextureInfoDic, combinedMaterial) = CombineMaterial(materialGroup, meshCombineOption.materialCombineOption);
+            var (materialTextureInfoDic, combinedMaterial) = CombineMaterial(materialGroup, materialCombineOption.textureResolutionRatio);
 
             int _offset = 0;
             Vector2[] newRatioUV = new Vector2[combinedNewMesh.uv.Length];
@@ -433,13 +425,20 @@ namespace AvatarPluginForUnity
             return combinedMaterial;
         }
 
-        private static List<List<MeshCombineDescriptor>> InitMeshCombineDescriptor(MeshCombineOption meshCombineOption, SkinnedMeshRenderer[] targetMeshes)
+        /// <summary>
+        /// Initializes the mesh combine descriptor.
+        /// </summary>
+        /// <param name="targetMeshes">The target meshes.</param>
+        /// <param name="combineFlags">The combine flags.</param>
+        /// <param name="materialCombineOption">The material combine option.</param>
+        /// <returns></returns>
+        private static List<List<MeshCombineDescriptor>> InitMeshCombineDescriptor(SkinnedMeshRenderer[] targetMeshes, CombineFlags combineFlags, MaterialCombineOption materialCombineOption)
         {
 
             List<List<MeshCombineDescriptor>> meshCombineDescriptorsSet;
             List<MeshCombineDescriptor> meshCombineDescriptors = MakeMeshCombineDescriptors(targetMeshes);
 
-            if (meshCombineOption.combineFlags.HasFlag(MeshCombineOption.CombineFlags.UseMaterialCombine) && meshCombineOption.materialCombineOption.textureAtlasOptimization)
+            if (combineFlags.HasFlag(CombineFlags.UseMaterialCombine) && materialCombineOption.textureAtlasOptimization)
                 meshCombineDescriptorsSet = GetOptimizedMeshCombineDescriptorsSet(meshCombineDescriptors);
             else
                 meshCombineDescriptorsSet = new List<List<MeshCombineDescriptor>>() { meshCombineDescriptors };
@@ -514,7 +513,7 @@ namespace AvatarPluginForUnity
                         }
                     }
                 }
-                if(atalsGroup.Count!=0)
+                if (atalsGroup.Count != 0)
                     meshCombineDescriptorsSet.Add(atalsGroup);
 
                 return meshCombineDescriptorsSet;
@@ -529,7 +528,7 @@ namespace AvatarPluginForUnity
         private static List<MeshCombineDescriptor> MakeMeshCombineDescriptors(SkinnedMeshRenderer[] targetMeshes)
         {
             List<MeshCombineDescriptor> meshCombineDescriptors = new List<MeshCombineDescriptor>();
-            foreach(var sm in targetMeshes)
+            foreach (var sm in targetMeshes)
                 meshCombineDescriptors.AddRange(MeshCombineDescriptor.GetMeshCombineDescriptorsFromSubmeshes(sm));
 
             return meshCombineDescriptors;
@@ -540,11 +539,11 @@ namespace AvatarPluginForUnity
         /// </summary>
         /// <param name="targetMeshes">The target meshes.</param>
         /// <returns></returns>
-        private static bool MaterialCombineCheck(SkinnedMeshRenderer[] targetMeshes, CustomMaterialData customMaterialData)
+        private static bool MaterialCombineCheck(SkinnedMeshRenderer[] targetMeshes)
         {
             foreach (var sm in targetMeshes)
                 foreach (var materia in sm.materials)
-                    if (!MaterialCombineVerification(materia, customMaterialData))
+                    if (!MaterialCombineVerification(materia))
                         return false;
             return true;
         }
@@ -555,7 +554,7 @@ namespace AvatarPluginForUnity
         /// <param name="transform">The transform.</param>
         /// <param name="offset">The offset.</param>
         /// <param name="count">The count.</param>
-        private static void ApplyTransform(Vector3[] deltas, Matrix4x4 transform,int offset, int count)
+        private static void ApplyTransform(Vector3[] deltas, Matrix4x4 transform, int offset, int count)
         {
             if (offset < 0 || deltas.Length < offset || deltas.Length < offset + count)
                 return;
@@ -579,8 +578,9 @@ namespace AvatarPluginForUnity
         /// Instantiates the renderer parms.
         /// </summary>
         /// <param name="renderer">The renderer.</param>
+        /// <param name="textureResolutionRatio">The texture resolution ratio.</param>
         /// <returns></returns>
-        public static Renderer InstantiateRendererParms(Renderer renderer, MeshCombineOption meshCombineOption)
+        public static Renderer InstantiateRendererParms(Renderer renderer, TextureResolutionRatio textureResolutionRatio)
         {
             if (renderer is MeshRenderer)
             {
@@ -590,7 +590,7 @@ namespace AvatarPluginForUnity
             else if (renderer is SkinnedMeshRenderer smr)
                 smr.sharedMesh = Instantiate(smr.sharedMesh);
 
-            renderer.material = CopyNewMaterial(renderer.material, meshCombineOption);
+            renderer.material = CopyNewMaterial(renderer.material, textureResolutionRatio);
             return renderer;
         }
 

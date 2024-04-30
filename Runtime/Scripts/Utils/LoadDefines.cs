@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  ******************************************************************/
-using System.Collections.Generic;
 
 namespace AvatarPluginForUnity
 {
@@ -68,9 +67,9 @@ namespace AvatarPluginForUnity
             /// </summary>
             Humanoid,
             /// <summary>
-            /// The Generic
+            /// The Legacy
             /// </summary>
-            Generic,
+            Legacy,
             /// <summary>
             /// The None
             /// </summary>

@@ -58,10 +58,5 @@ namespace AvatarPluginForUnity
         /// </summary>
         [SerializeField]
         public bool textureAtlasOptimization = true;
-        /// <summary>
-        /// The custom shader
-        /// </summary>
-        [SerializeField]
-        public CustomMaterialData customMaterialData = null;
     }
 }

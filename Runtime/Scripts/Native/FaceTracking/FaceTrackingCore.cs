@@ -63,7 +63,10 @@ namespace AvatarPluginForUnity
         /// The face tracking native
         /// </summary>
         private AndroidJavaObject faceTrackingNative = null;
-
+        /// <summary>
+        /// The face tracking object
+        /// </summary>
+        private FaceTrackingObject faceTrackingObject = null;
         /// <summary>
         /// The client handler
         /// </summary>
@@ -117,7 +120,7 @@ namespace AvatarPluginForUnity
             if (_useTracking) return;
             if (faceTrackingNative == null)
             {
-                Debug.LogError("AndroidJavaObject instance is null");
+                Debug.Log("AndroidJavaObject instance is null");
                 return;
             }
             faceTrackingNative.Call("startTracking");
@@ -131,7 +134,7 @@ namespace AvatarPluginForUnity
             if (!_useTracking) return;
             if (faceTrackingNative == null)
             {
-                Debug.LogError("AndroidJavaObject instance is null");
+                Debug.Log("AndroidJavaObject instance is null");
                 return;
             }
             _useTracking = false;
@@ -146,7 +149,7 @@ namespace AvatarPluginForUnity
         {
             if (faceTrackingNative == null)
             {
-                Debug.LogError("AndroidJavaObject instance is null");
+                Debug.Log("AndroidJavaObject instance is null");
                 return null;
             }
             AndroidJavaObject face = faceTrackingNative.Call<AndroidJavaObject>("getTrackingData");
@@ -161,10 +164,15 @@ namespace AvatarPluginForUnity
             if (_useTracking)
             {
                 FaceTrackingObject face = GetFaceData();
+
+                if (face == null)
+                    face = faceTrackingObject;
+
                 if (face != null)
                 {
                     if (trackingHandler != null)
                         trackingHandler(face);
+                    faceTrackingObject = face;
                 }
             }
         }

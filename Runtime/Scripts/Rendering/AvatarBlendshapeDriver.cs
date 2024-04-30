@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  ******************************************************************/
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -102,19 +101,15 @@ namespace AvatarPluginForUnity
         "Tongue_Right"
     };
 
-        /// <summary>
-        /// The isTracking
-        /// </summary>
-        public bool isTracking = false;
 
         /// <summary>
         /// The associated Mesh mesh
         /// </summary>
         private SkinnedMeshRenderer associatedMesh = null;
         /// <summary>
-        /// The associated Mesh mesh
+        /// The weights
         /// </summary>
-        private bool isAvailable = true;
+        private float[] weights = new float[avatarBlendshapeList.Count];
         /// <summary>
         /// The avatar blendshape mesh set
         /// </summary>
@@ -192,23 +187,17 @@ namespace AvatarPluginForUnity
                 return false;
         }
 
-
-        // Update is called once per frame
         /// <summary>
-        /// Updates this instance.
+        /// Updates the sub meshs weights.
         /// </summary>
         /// <param name="weights">The weights.</param>
-        public void FaceTackingUpdate(float[] weights)
+        private void UpdateSubMeshsWeights(float[] weights)
         {
-            if (!isTracking || !isAvailable)
-                return;
             if (avatarBlendshapeMeshSet.Count == 0)
             {
                 Debug.Log("No blendshape target found! ");
-                isAvailable = false;
                 return;
             }
-
             for (int idx = 0; idx < avatarBlendshapeList.Count; ++idx)
             {
                 List<SkinnedMeshRenderer> blendShapeMeshSet;
@@ -225,34 +214,36 @@ namespace AvatarPluginForUnity
             }
         }
 
-        // Update is called once per frame
         /// <summary>
-        /// Updates this instance.
+        /// Updates the blend shape weights.
         /// </summary>
-        void LateUpdate()
+        /// <param name="weights">The weights.</param>
+        public void UpdateBlendShapeWeights(float[] weights)
         {
-            if (isTracking || !isAvailable)
-                return;
-            if (associatedMesh == null || avatarBlendshapeMeshSet.Count == 0)
+            if (associatedMesh == null)
             {
-                Debug.Log("No source renderer or blendshape target found! ");
-                isAvailable = false;
+                Debug.Log("No source renderer found! ");
                 return;
             }
             for (int idx = 0; idx < avatarBlendshapeList.Count; ++idx)
+                associatedMesh.SetBlendShapeWeight(idx, weights[idx]);
+
+            UpdateSubMeshsWeights(weights);
+        }
+
+        /// <summary>
+        /// Lates the update.
+        /// </summary>
+        void LateUpdate()
+        {
+            if (associatedMesh == null)
             {
-                List<SkinnedMeshRenderer> blendShapeMeshSet;
-                if (avatarBlendshapeMeshSet.TryGetValue(avatarBlendshapeList[idx], out blendShapeMeshSet))
-                {
-                    float source = associatedMesh.GetBlendShapeWeight(idx);
-                    foreach (var sm in blendShapeMeshSet)
-                    {
-                        if (sm == null || sm.sharedMesh == null) continue;
-                        int blendshapeIdx = sm.sharedMesh.GetBlendShapeIndex(avatarBlendshapeList[idx]);
-                        sm.SetBlendShapeWeight(blendshapeIdx, source);
-                    }
-                }
+                Debug.Log("No source renderer found! ");
+                return;
             }
+            for (int idx = 0; idx < avatarBlendshapeList.Count; ++idx)
+                weights[idx] = associatedMesh.GetBlendShapeWeight(idx);
+            UpdateSubMeshsWeights(weights);
         }
     }
 }

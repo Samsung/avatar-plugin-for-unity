@@ -18,7 +18,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-using static AvatarPluginForUnity.AvatarCombineOption;
 
 namespace AvatarPluginForUnity
 {
@@ -30,7 +29,7 @@ namespace AvatarPluginForUnity
         /// <summary>
         /// 
         /// </summary>
-        public enum CombinedMeshType
+        public enum MeshType
         {
             /// <summary>
             /// The head
@@ -52,37 +51,37 @@ namespace AvatarPluginForUnity
         /// <summary>
         /// The combined mesh dic
         /// </summary>
-        private Dictionary<CombinedMeshType, SkinnedMeshRenderer> combinedMeshDic;
+        private Dictionary<MeshType, SkinnedMeshRenderer> combinedMeshDic;
         /// <summary>
         /// The avatar eye mesh set
         /// </summary>
         private List<Renderer> noneCombinedMeshSet = new List<Renderer>();
         /// <summary>
+        /// The use mesh combine
+        /// </summary>
+        private bool useMeshCombine;
+        /// <summary>
         /// The mesh combine option
         /// </summary>
-        private MeshCombineOption meshCombineOption;
-        /// <summary>
-        /// The combine mesh
-        /// </summary>
-        private bool useMeshCombine = false;
+        private CombineOption meshCombineOption;
 
-        private bool separateHeadBody = false;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="AvatarMeshComposer" /> class.
+        /// Initializes a new instance of the <see cref="AvatarMeshComposer"/> class.
         /// </summary>
         /// <param name="loadNode">The load node.</param>
-        /// <param name="useMeshCombine">if set to <c>true</c> [ues mesh combine].</param>
+        /// <param name="useMeshCombine">if set to <c>true</c> [use mesh combine].</param>
         /// <param name="meshCombineOption">The mesh combine option.</param>
-        public AvatarMeshComposer(GameObject loadNode, bool useMeshCombine, AvatarCombineOption avatarMeshCombineOption)
+        public AvatarMeshComposer(GameObject loadNode, bool useMeshCombine, CombineOption meshCombineOption)
         {
-            this.meshCombineOption = avatarMeshCombineOption.ToMeshCombineOption();
-            separateHeadBody = avatarMeshCombineOption.combineFlags.HasFlag(AvatarCombineFlags.SeparateHeadBody);
             this.loadNode = loadNode;
             this.useMeshCombine = useMeshCombine;
-            var (combineTargetMeshSet1, combineTargetMeshSet2) = InitAvatarMeshSet();
+            this.meshCombineOption = meshCombineOption;
+            Dictionary<MeshType, List<SkinnedMeshRenderer>> avatarMeshSet = InitAvatarMeshSet();
+
             if (useMeshCombine)
-                MakeCombinedMesh(combineTargetMeshSet1, combineTargetMeshSet2);
-            
+                MakeCombinedMesh(avatarMeshSet);
+        
             SetAvatarShadow(ShadowCastingMode.Off, false);
         }
         /// <summary>
@@ -94,15 +93,15 @@ namespace AvatarPluginForUnity
         {
             if (useMeshCombine)
             {
-                if (separateHeadBody)
+                if (meshCombineOption.separateHeadBody)
                 {
-                    combinedMeshDic[CombinedMeshType.Head].shadowCastingMode = combinedMeshDic[CombinedMeshType.Body].shadowCastingMode = castingMode;
-                    combinedMeshDic[CombinedMeshType.Head].receiveShadows = combinedMeshDic[CombinedMeshType.Body].receiveShadows = isReceiveShadow;
+                    combinedMeshDic[MeshType.Head].shadowCastingMode = combinedMeshDic[MeshType.Body].shadowCastingMode = castingMode;
+                    combinedMeshDic[MeshType.Head].receiveShadows = combinedMeshDic[MeshType.Body].receiveShadows = isReceiveShadow;
                 }
                 else
                 {
-                    combinedMeshDic[CombinedMeshType.Whole].shadowCastingMode  = castingMode;
-                    combinedMeshDic[CombinedMeshType.Whole].receiveShadows  = isReceiveShadow;
+                    combinedMeshDic[MeshType.Whole].shadowCastingMode  = castingMode;
+                    combinedMeshDic[MeshType.Whole].receiveShadows  = isReceiveShadow;
                 }
             }
             foreach (Renderer meshNode in noneCombinedMeshSet)
@@ -119,10 +118,10 @@ namespace AvatarPluginForUnity
         {
             if (useMeshCombine)
             {
-                if (separateHeadBody)
-                    combinedMeshDic[CombinedMeshType.Head].enabled = combinedMeshDic[CombinedMeshType.Body].enabled = isVisible;
+                if (meshCombineOption.separateHeadBody)
+                    combinedMeshDic[MeshType.Head].enabled = combinedMeshDic[MeshType.Body].enabled = isVisible;
                 else
-                    combinedMeshDic[CombinedMeshType.Whole].enabled = isVisible;
+                    combinedMeshDic[MeshType.Whole].enabled = isVisible;
             }
             foreach (Renderer meshNode in noneCombinedMeshSet)
                 meshNode.enabled = isVisible;
@@ -132,32 +131,33 @@ namespace AvatarPluginForUnity
         /// </summary>
         /// <param name="combineType">Type of the combine.</param>
         /// <returns></returns>
-        public SkinnedMeshRenderer GetCombinedMesh(CombinedMeshType combineType)
+        public SkinnedMeshRenderer GetCombinedMesh(MeshType combineType)
         {
             if (combinedMeshDic.ContainsKey(combineType))
                 return combinedMeshDic[combineType];
             else
             {
-                Debug.LogError("There is no Combined Mesh corresponding to " + combineType.ToString() + "!!");
+                Debug.Log("There is no Combined Mesh corresponding to " + combineType.ToString() + "!!");
                 return null;
             }
         }
+
+
         /// <summary>
         /// Makes the combined mesh.
         /// </summary>
-        /// <param name="combineTargetMeshSet1">The combine target mesh set1.</param>
-        /// <param name="combineTargetMeshSet2">The combine target mesh set2.</param>
-        private void MakeCombinedMesh(List<SkinnedMeshRenderer> combineTargetMeshSet1, List<SkinnedMeshRenderer> combineTargetMeshSet2)
+        /// <param name="avatarMeshSet">The avatar mesh set.</param>
+        private void MakeCombinedMesh(Dictionary<MeshType, List<SkinnedMeshRenderer>> avatarMeshSet)
         {
-            combinedMeshDic = new Dictionary<CombinedMeshType, SkinnedMeshRenderer>();
+            combinedMeshDic = new Dictionary<MeshType, SkinnedMeshRenderer>();
             Transform hips_JNT = GetChildGameObject(NodeDefines.HIP_JNT, loadNode).transform;
-            if (separateHeadBody)
+            if (meshCombineOption.separateHeadBody)
             {
-                combinedMeshDic[CombinedMeshType.Head] = MakeCombinedMesh(hips_JNT, combineTargetMeshSet1, "CombinedHeadMesh");
-                combinedMeshDic[CombinedMeshType.Body] = MakeCombinedMesh(hips_JNT, combineTargetMeshSet2, "CombinedBodyMesh");
+                combinedMeshDic[MeshType.Head] = MakeCombinedMesh(hips_JNT, avatarMeshSet[MeshType.Head], "CombinedHeadMesh");
+                combinedMeshDic[MeshType.Body] = MakeCombinedMesh(hips_JNT, avatarMeshSet[MeshType.Body], "CombinedBodyMesh");
             }
             else
-                combinedMeshDic[CombinedMeshType.Whole] = MakeCombinedMesh(hips_JNT, combineTargetMeshSet1, "CombinedMesh");
+                combinedMeshDic[MeshType.Whole] = MakeCombinedMesh(hips_JNT, avatarMeshSet[MeshType.Whole], "CombinedMesh");
         }
         /// <summary>
         /// Makes the combined mesh.
@@ -171,47 +171,70 @@ namespace AvatarPluginForUnity
             GameObject combinedBodyMeshObject = MakeSubNode(name, loadNode.transform);
             SkinnedMeshRenderer combinedMesh = combinedBodyMeshObject.AddComponent<SkinnedMeshRenderer>();
             combinedMesh.rootBone = hips_JNT;
-            AvatarMeshCombiner.CombineSkinnedMesh(combineTargetMeshSet.ToArray(), combinedMesh, meshCombineOption);
+            Transform avatarCompTransform = loadNode.transform.parent;
+            loadNode.SetActive(false);
+            loadNode.transform.parent = null;
+            loadNode.transform.localScale = Vector3.one * 0.01f;
+            AvatarMeshCombiner.CombineSkinnedMesh(combineTargetMeshSet.ToArray(), combinedMesh, meshCombineOption.combineFlags, meshCombineOption.materialCombineOption);
+            loadNode.transform.parent = avatarCompTransform;
+            loadNode.transform.localScale = Vector3.one * 0.01f;
+            loadNode.SetActive(true);
             return combinedMesh;
         }
         /// <summary>
         /// Set the ar emoji mesh set.
         /// </summary>
         /// <returns></returns>
-        private (List<SkinnedMeshRenderer>, List<SkinnedMeshRenderer>) InitAvatarMeshSet()
+        private Dictionary<MeshType, List<SkinnedMeshRenderer>> InitAvatarMeshSet()
         {
-
-            List<SkinnedMeshRenderer> combineTargetMeshSet1 = new List<SkinnedMeshRenderer>();
-            List<SkinnedMeshRenderer> combineTargetMeshSet2 = new List<SkinnedMeshRenderer>();
+            Dictionary<MeshType, List<SkinnedMeshRenderer>> avatarMeshSet = new Dictionary<MeshType, List<SkinnedMeshRenderer>>();
 
             Renderer[] allChildren = loadNode.GetComponentsInChildren<Renderer>(true);
+
             foreach (Renderer child_ in allChildren)
             {
+
                 if (child_ is SkinnedMeshRenderer)
                     NormalizeBoneWeights((SkinnedMeshRenderer)child_);
 
-                if (!useMeshCombine || !AvatarMaterialCombiner.MaterialCombineVerification(child_.material, meshCombineOption.materialCombineOption.customMaterialData) || child_.name.Contains("iris_") || child_.name.Contains("cornea_"))
+                if (!useMeshCombine || !AvatarMaterialCombiner.MaterialCombineVerification(child_.material) || child_.name.Contains("iris_") || child_.name.Contains("cornea_"))
                 {
                     if (useMeshCombine)
-                        AvatarMeshCombiner.InstantiateRendererParms(child_, meshCombineOption);
+                        AvatarMeshCombiner.InstantiateRendererParms(child_, meshCombineOption.materialCombineOption.textureResolutionRatio);
                     noneCombinedMeshSet.Add(child_);
                 }
-                else if (useMeshCombine && AvatarMaterialCombiner.MaterialCombineVerification(child_.material, meshCombineOption.materialCombineOption.customMaterialData))
+                else if (useMeshCombine && AvatarMaterialCombiner.MaterialCombineVerification(child_.material) && child_ is SkinnedMeshRenderer)
                 {
-                    if (separateHeadBody)
+                    if (meshCombineOption.separateHeadBody)
                     {
-                        if (IsContainedHeadNode(child_.transform) && child_ is SkinnedMeshRenderer)
-                            combineTargetMeshSet1.Add((SkinnedMeshRenderer)child_);
-                        else if (child_ is SkinnedMeshRenderer)
-                            combineTargetMeshSet2.Add((SkinnedMeshRenderer)child_);
+                        if (IsContainedHeadNode(child_.transform))
+                        {
+                            if (!avatarMeshSet.ContainsKey(MeshType.Head))
+                                avatarMeshSet[MeshType.Head] = new List<SkinnedMeshRenderer>();
+                            avatarMeshSet[MeshType.Head].Add((SkinnedMeshRenderer)child_);
+                        }
+                        else
+                        {
+                            if (!avatarMeshSet.ContainsKey(MeshType.Body))
+                                avatarMeshSet[MeshType.Body] = new List<SkinnedMeshRenderer>();
+                            avatarMeshSet[MeshType.Body].Add((SkinnedMeshRenderer)child_);
+                        }
                     }
-                    else if (!separateHeadBody && child_ is SkinnedMeshRenderer)
-                        combineTargetMeshSet1.Add((SkinnedMeshRenderer)child_);
+                    else if (!meshCombineOption.separateHeadBody)
+                    {
+                        if (!avatarMeshSet.ContainsKey(MeshType.Whole))
+                            avatarMeshSet[MeshType.Whole] = new List<SkinnedMeshRenderer>();
+                        avatarMeshSet[MeshType.Whole].Add((SkinnedMeshRenderer)child_);
+                    }
                 }
             }
-            return (combineTargetMeshSet1, combineTargetMeshSet2);
+            return avatarMeshSet;
         }
 
+        /// <summary>
+        /// Normalizes the bone weights.
+        /// </summary>
+        /// <param name="skinnedMesh">The skinned mesh.</param>
         private void NormalizeBoneWeights(SkinnedMeshRenderer skinnedMesh)
         {
             var mesh = skinnedMesh.sharedMesh;

@@ -27,6 +27,9 @@ using AvatarPluginForUnity.Editor;
 using static AvatarPluginForUnity.AvatarBoneConstructor;
 using static AvatarPluginForUnity.AvatarMeshComposer;
 using static AvatarPluginForUnity.LoadDefines;
+using System.Linq;
+using System.Collections.Generic;
+using UnityEngine.Events;
 
 namespace AvatarPluginForUnity
 {
@@ -37,11 +40,10 @@ namespace AvatarPluginForUnity
     [RequireComponent(typeof(Animator))]
     public class AvatarComponent : MonoBehaviour
     {
-
         /// <summary>
         /// 
         /// </summary>
-        public enum LoadStatus
+        private enum LoadStatus
         {
             /// <summary>
             /// The notstarted
@@ -52,18 +54,24 @@ namespace AvatarPluginForUnity
             /// </summary>
             INPROGRESS,
             /// <summary>
+            /// The gltfloaded
+            /// </summary>
+            GLTFLOADED,
+            /// <summary>
             /// The done
             /// </summary>
             DONE,
         }
+
         /// <summary>
         /// The load on start up
         /// </summary>
+        [Header("[Load Option]")]
         [SerializeField] private bool loadOnStartUp;
         /// <summary>
         /// The asset location
         /// </summary>
-        [SerializeField] public AssetLocation assetLocation;
+        [SerializeField] private AssetLocation assetLocation;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
         /// <summary>
         /// The load type
@@ -76,42 +84,32 @@ namespace AvatarPluginForUnity
         /// </summary>
         [SerializeField] private string Url;
         /// <summary>
-        /// The ues mesh combine
+        /// The use mesh combine
         /// </summary>
-        [SerializeField] public bool useMeshCombine;
+        [Header("[Render Option]")]
+        [SerializeField] private bool useMeshCombine;
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
         /// <summary>
         /// The mesh combine option
         /// </summary>
         [DrawIf("useMeshCombine", true, DrawIfAttribute.DisablingType.Draw)]
 #endif
-        [SerializeField] public AvatarCombineOption meshCombineOption;
+        [SerializeField] private CombineOption meshCombineOption;
+
+
+        [Header("[Animation Option]")]
         /// <summary>
         /// The animation type
         /// </summary>
         [SerializeField] private AnimationType animatorType;
         /// <summary>
-        /// Gets the type of the body.
-        /// </summary>
-        /// <value>
-        /// The type of the body.
-        /// </value>
-        public BodyType BodyType => _bodyType;
-        /// <summary>
-        /// The body type
-        /// </summary>
-        private BodyType _bodyType = BodyType.Female;
-        /// <summary>
-        /// Gets the load node.
-        /// </summary>
-        /// <value>
-        /// The load node.
-        /// </value>
-        public GameObject loadNode => _loadNode;
-        /// <summary>
         /// The load node
         /// </summary>
-        private GameObject _loadNode = null;
+        private GameObject loadNode = null;
+        /// <summary>
+        /// The m GLTF transforms
+        /// </summary>
+        private Dictionary<string, Transform> m_gltfTransforms = null;
         /// <summary>
         /// The avatar bone constructor
         /// </summary>
@@ -124,27 +122,24 @@ namespace AvatarPluginForUnity
         /// The avatar blendshape driver
         /// </summary>
         private AvatarBlendshapeDriver avatarBlendshapeDriver = null;
+        /// <summary>
+        /// The in progress feature event
+        /// </summary>
+        [Header("[Load Status Event]")]
+        [SerializeField]
+        public UnityEvent InProgressFeatureEvent;
 
         /// <summary>
-        /// Occurs when [on status changed callback].
+        /// The GLTF loaded feature event
         /// </summary>
-        private event Action<LoadStatus> _onStatusChangedCallback;
+        [SerializeField]
+        public UnityEvent GltfLoadedFeatureEvent;
 
         /// <summary>
-        /// Occurs when [on status changed callback].
+        /// The done feature event
         /// </summary>
-        public event Action<LoadStatus> OnStatusChangedCallback
-        {
-            add
-            {
-                _onStatusChangedCallback += value;
-            }
-            remove
-            {
-                _onStatusChangedCallback -= value;
-
-            }
-        }
+        [SerializeField]
+        public UnityEvent DoneFeatureEvent;
         /// <summary>
         /// Gets the state.
         /// </summary>
@@ -275,6 +270,8 @@ namespace AvatarPluginForUnity
             loadType = LoadType.Url;
             yield return LoadAvatarAsync(fullPath);
         }
+
+
         /// <summary>
         /// Loads the ar emoji asynchronous.
         /// </summary>
@@ -293,16 +290,18 @@ namespace AvatarPluginForUnity
 
             if (result.Result)
             {
+                ChangeStatus(LoadStatus.GLTFLOADED);
+
                 //Set Bone Constructor
-                avatarBoneConstructor = new AvatarBoneConstructor(_loadNode);
+                avatarBoneConstructor = new AvatarBoneConstructor(loadNode);
 
                 //Set Mesh Composer
-                avatarMeshComposer = new AvatarMeshComposer(_loadNode, useMeshCombine, meshCombineOption);
-                if (useMeshCombine && meshCombineOption.combineFlags.HasFlag(AvatarCombineOption.AvatarCombineFlags.RemoveTargetMeshes))
+                avatarMeshComposer = new AvatarMeshComposer(loadNode, useMeshCombine, meshCombineOption);
+                if (useMeshCombine && meshCombineOption.combineFlags.HasFlag(CombineFlags.RemoveTargetMeshes))
                     Destroy(gltfAsset);
 
                 //Set Blendshape Driver
-                if (!useMeshCombine || (useMeshCombine && !meshCombineOption.combineFlags.HasFlag(AvatarCombineOption.AvatarCombineFlags.RemoveBlendshapes)))
+                if (!useMeshCombine || (useMeshCombine && !meshCombineOption.combineFlags.HasFlag(CombineFlags.RemoveBlendshapes)))
                 {
                     avatarBlendshapeDriver = loadNode.AddComponent<AvatarBlendshapeDriver>();
                     avatarBlendshapeDriver.InitBlendshapeDriver();
@@ -321,12 +320,12 @@ namespace AvatarPluginForUnity
                 else
                     _animator.enabled = false;
 
-                _loadNode.SetActive(true);
+                loadNode.SetActive(true);
                 ChangeStatus(LoadStatus.DONE);
             }
             else
             {
-                Debug.LogError("Failed to load Avatar!! ");
+                Debug.Log("Failed to load Avatar!! ");
                 InitComponent();
                 ChangeStatus(LoadStatus.NOTSTARTED);
             }
@@ -339,7 +338,7 @@ namespace AvatarPluginForUnity
         /// </returns>
         private GltfAsset IntiGltfAsset()
         {
-            gltfAsset = _loadNode.GetComponent<GltfAsset>();
+            gltfAsset = loadNode.GetComponent<GltfAsset>();
             gltfAsset.StreamingAsset = (assetLocation == AssetLocation.StreamingAsset) ? true : false;
             return gltfAsset;
         }
@@ -348,14 +347,15 @@ namespace AvatarPluginForUnity
         /// </summary>
         private void InitComponent()
         {
-            if (_loadNode != null)
-                Destroy(_loadNode);
-            _loadNode = null;
+            if (loadNode != null)
+                Destroy(loadNode);
+            loadNode = null;
             avatarMeshComposer = null;
             avatarBoneConstructor = null;
             if(avatarBlendshapeDriver!=null)
                 Destroy(avatarBlendshapeDriver);
             avatarBlendshapeDriver = null;
+            m_gltfTransforms = null;
         }
         /// <summary>
         /// Makes the sub node.
@@ -363,13 +363,13 @@ namespace AvatarPluginForUnity
         /// <param name="parent">The parent.</param>
         private void InstantiateLoadNode(Transform parent)
         {
-            _loadNode = Instantiate(Resources.Load(NodeDefines.LOAD_NODE, typeof(GameObject))) as GameObject;
-            _loadNode.name = NodeDefines.LOAD_NODE;
-            _loadNode.transform.parent = parent;
-            _loadNode.transform.localPosition = Vector3.zero;
-            _loadNode.transform.localEulerAngles = Vector3.zero;
-            _loadNode.transform.localScale = Vector3.one;
-            _loadNode.SetActive(false);
+            loadNode = Instantiate(Resources.Load(NodeDefines.LOAD_NODE, typeof(GameObject))) as GameObject;
+            loadNode.name = NodeDefines.LOAD_NODE;
+            loadNode.transform.parent = parent;
+            loadNode.transform.localPosition = Vector3.zero;
+            loadNode.transform.localEulerAngles = Vector3.zero;
+            loadNode.transform.localScale = Vector3.one * 0.01f;
+            loadNode.SetActive(false);
         }
 
         /// <summary>
@@ -379,7 +379,12 @@ namespace AvatarPluginForUnity
         private void ChangeStatus(LoadStatus status)
         {
             loadstatus = status;
-            _onStatusChangedCallback?.Invoke(status);
+            if (status.Equals(LoadStatus.INPROGRESS))
+                InProgressFeatureEvent?.Invoke();
+            else if (status.Equals(LoadStatus.GLTFLOADED))
+                GltfLoadedFeatureEvent?.Invoke();
+            else if (status.Equals(LoadStatus.DONE))
+                DoneFeatureEvent?.Invoke();
         }
         /// <summary>
         /// Set the ar emoji shadow.
@@ -400,7 +405,7 @@ namespace AvatarPluginForUnity
         /// </summary>
         /// <param name="combineType">Type of the combine.</param>
         /// <returns></returns>
-        public SkinnedMeshRenderer GetCombinedMesh(CombinedMeshType combineType)
+        public SkinnedMeshRenderer GetCombinedMesh(MeshType combineType)
         {
             if (!(loadstatus == LoadStatus.DONE) || !useMeshCombine)
             {
@@ -411,17 +416,52 @@ namespace AvatarPluginForUnity
         }
 
         /// <summary>
+        /// Gets the blendshape driver.
+        /// </summary>
+        /// <returns></returns>
+        public AvatarBlendshapeDriver GetBlendshapeDriver()
+        {
+            if (!(loadstatus == LoadStatus.DONE) || avatarBlendshapeDriver == null)
+            {
+                Debug.Log("There is no BlendshapeDriver or BlendshapeDriver can be obtained after Avatar is loaded!!");
+                return null;
+            }
+            return avatarBlendshapeDriver;
+        }
+        /// <summary>
         /// Gets the type of the body.
         /// </summary>
         /// <returns></returns>
-        public BodyType? GetBodyType()
+        public BodyType GetBodyType()
         {
             if (!(loadstatus == LoadStatus.DONE))
             {
                 Debug.Log("BodyType can be obtained after Avatar is loaded!!");
-                return null;
+                return BodyType.Female;
             }
             return avatarBoneConstructor.bodyType;
+        }
+
+        /// <summary>
+        /// Finds the name of the avatar transform by.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        public Transform FindAvatarTransformByName(string value)
+        {
+            if (m_gltfTransforms == null)
+                m_gltfTransforms = loadNode.GetComponentsInChildren<Transform>(true).ToDictionary(x => x.name, x => x.transform);
+
+            if (m_gltfTransforms.ContainsKey(value))
+                return m_gltfTransforms[value];
+            else
+            {
+                m_gltfTransforms = loadNode.GetComponentsInChildren<Transform>(true).ToDictionary( x =>{return x.name;}, x => x.transform);
+                if (m_gltfTransforms.ContainsKey(value))
+                    return m_gltfTransforms[value];
+            }
+            Debug.Log("The Avatar has not yet been loaded or there is no Transform for its name.!!");
+            return null;
         }
     }
 }
