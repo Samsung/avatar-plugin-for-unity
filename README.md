@@ -63,7 +63,7 @@ The Avatar Plug-in for Unity automatically configures essential project settings
 |----------|-------------|------|
 | Minimum API Level| Player/Iedntification | Android 9.0 'Pie'(API level 28) |
 | Normal Map Encoding | Player/Rendering | XYZ |
-| Scriipting Backend | Player/Configuration | IL2CPP |
+| Scripting Backend | Player/Configuration | IL2CPP |
 | Target Architectures | Player/Configuration | ARM64 |
 | Always Included Shaders | Graphics/Built-in Shader Settings | Add glTF/PbrMetallicRoughness |
 </center>
